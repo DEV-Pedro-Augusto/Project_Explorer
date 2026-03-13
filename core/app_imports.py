@@ -4,30 +4,30 @@ import threading
 from controllers.app_controller import ControllerMain
 
 # Views
-from views.iu.main_view import MainView
-from views.main_windows import MainWindow  # Supondo que você usa essa classe para janela principal
+from view.iu.main_view import MainView
+from view.main_windows import MainWindow  # Supondo que você usa essa classe para janela principal
 
-from views.animations.button_animate import AnimacoesBotao
-from views.animations.page_animate import AnimacoesPage
+from view.animations.button_animate import AnimacoesBotao
+from view.animations.page_animate import AnimacoesPage
 
-from views.pages.dashboard import Dashboard
-from views.pages.home_view import HomeView
-from views.pages.inventory_view import InventoryView
-from views.pages.login_view import LoginView
-from views.pages.settings_view import SettingsView
+from view.pages.dashboard import Dashboard
+from view.pages.home_view import HomeView
+from view.pages.inventory_view import InventoryView
+from view.pages.login_view import LoginView
+from view.pages.settings_view import SettingsView
 
 # Models
-from models.main_model import MainModel
-from models.categoria_model import CategoriaModel
-from models.item_model import ItemModel
-from models.acao_model import AcaoPageItem
-from models.usuario_model import UsuarioModel
+from model.main_model import MainModel
+from model.categoria_model import CategoriaModel
+from model.item_model import ItemModel
+from model.acao_model import AcaoPageItem
+from model.usuario_model import UsuarioModel
 
 from core.database import Database
 from core.config_database import CONFIG_DB_SCHOOL
 
 # Services
-from services.app_services import AppServices
+from service.app_services import AppServices
 
 
 def create_app(page, ft):
