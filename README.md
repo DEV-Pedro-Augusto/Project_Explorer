@@ -28,3 +28,21 @@ A aplicação está preparada para tratar dados de:
 * Gabriel Henrique da Silva
 * Pedro Augusto Domingos Pereira da Silva
 * Thales Frederico Fagundes de Noronha
+
+# Window Ambiente virtual 
+.... Instalacao  do  ambiente virtual  
+
+    pip install flask # Instalando o virtualizador  
+    python -m venv Project_Explorer # Criando o ambiente virtual 
+    Project_Explorer/Scripts/activate # Iniciando o ambiente virtual 
+
+    #pip freeze > requirements.txt 
+    pip install -r requirements.txt # Instalando as dependencias 
+    
+# Lixux  Ambiente virtual 
+.... Instalacao  do  ambiente virtual Linux
+
+    pip install flask # Instalando o virtualizador  
+    python3 -m venv Project_Explorer
+    source Project_Explorer/bin/activate
+    pip install -r requirements.txt
