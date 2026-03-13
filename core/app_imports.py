@@ -1,7 +1,7 @@
 import time
 import threading
 
-from controllers.app_controller import ControllerMain
+from service.app_services import AppServices
 
 # Views
 from view.iu.main_view import MainView
@@ -31,7 +31,7 @@ from service.app_services import AppServices
 
 
 def create_app(page, ft):
-    controller = ControllerMain()
+    service = AppServices()
 
     # Cria o container principal de páginas
     main_view = MainView(
@@ -47,7 +47,7 @@ def create_app(page, ft):
         ft,
         AnimacoesPage,
         AnimacoesBotao,
-        controller,
+        service,
         main_view,
         time,
         threading,
@@ -63,8 +63,8 @@ def create_app(page, ft):
 
     services = AppServices(models)  # Exemplo de injeção dos models nos serviços
 
-    controller.view = view
-    controller.models = models
-    controller.services = services
+    service.view = view
+    service.models = models
+    service.services = services
 
-    return controller
+    return service
