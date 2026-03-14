@@ -5,8 +5,7 @@ from service.app_services import AppServices
 
 # Views
 from view.iu.main_view import MainView
-from view.main_windows import MainWindow  # Supondo que você usa essa classe para janela principal
-
+from view.main_windows import MainWindow  
 from view.animations.button_animate import AnimacoesBotao
 from view.animations.page_animate import AnimacoesPage
 
@@ -25,6 +24,7 @@ from model.usuario_model import UsuarioModel
 
 from core.database import Database
 from core.config_database import CONFIG_DB_SCHOOL
+
 
 # Services
 from service.app_services import AppServices
@@ -59,9 +59,10 @@ def create_app(page, ft):
         ItemModel,
         AcaoPageItem,
         UsuarioModel
+
     )
 
-    services = AppServices(models)  # Exemplo de injeção dos models nos serviços
+    services = AppServices(models) 
 
     service.view = view
     service.models = models

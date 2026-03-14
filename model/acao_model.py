@@ -11,6 +11,7 @@ class AcaoPageItem:
     def __init__(self, db: Optional[Any] = None):
         self.db = db
 
-    def execute(self) -> None:
-        """Execute the configured action."""
-        # TODO: implement action logic
+    def organiza_arquivos_car(self) -> None:
+        """ Organiza os arquivos que quem vem do carrinho antes de ir para o banco online """
+        
+      

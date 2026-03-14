@@ -1,7 +1,6 @@
 """Main window implementation."""
 
 from __future__ import annotations
-
 from typing import Any, Optional
 
 
@@ -30,6 +29,5 @@ class MainWindow:
 
     def build(self) -> None:
         """Build the main window layout."""
-        # TODO: implement the window build process
         if hasattr(self.main_view, "build"):
             self.main_view.build()
