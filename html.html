@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Config Server - IoT</title>
+    <style>
+        body { font-family: sans-serif; background: #f4f7f6; padding: 20px; color: #333; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        .form-group { margin-bottom: 15px; }
+        label { font-weight: bold; display: block; margin-bottom: 5px; }
+        input { width: 100%; padding: 8px; box-sizing: border-box; }
+        button { background: #3498db; color: white; padding: 10px; border: none; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #2980b9; }
+        pre { background: #222; color: #0f0; padding: 15px; overflow-x: auto; border-radius: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background: #eee; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Painel de Configuração IoT</h1>
+    
+    <div class="form-group">
+        <label>IP do Servidor (Ex: 172.16.31.64):</label>
+        <input type="text" id="serverName" value="172.16.31.64">
+    </div>
+    <div class="form-group">
+        <label>ID do Usuário:</label>
+        <input type="text" id="userId" placeholder="Ex: joao_123">
+    </div>
+    <div class="form-group">
+        <label>ID do Carrinho:</label>
+        <input type="text" id="cartId" placeholder="Ex: car_01">
+    </div>
+    <div class="form-group">
+        <label>Mensagem Padrão do Carrinho:</label>
+        <input type="text" id="cartMsg" value="Testando aspas resolvidas!">
+    </div>
+    <button onclick="gerarCodigo()">Gerar C++ Corrigido</button>
+
+    <div id="resultado" style="display: none; margin-top: 20px;">
+        <h3>Código C++ para o Carrinho:</h3>
+        <p>Copie o código abaixo. O problema do JSON inválido foi resolvido!</p>
+        <pre><code id="codigoCpp"></code></pre>
+    </div>
+
+    <h2>Carrinhos Ativos</h2>
+    <button onclick="carregarDados()">🔄 Atualizar Tabela</button>
+    <table>
+        <thead>
+            <tr>
+                <th>Usuário</th>
+                <th>Carrinho</th>
+                <th>Última Leitura</th>
+                <th>Dados Recebidos</th>
+                <th>Ação</th>
+            </tr>
+        </thead>
+        <tbody id="tabelaDados"></tbody>
+    </table>
+</div>
+
+<script>
+    function gerarCodigo() {
+        const srv = document.getElementById('serverName').value.trim();
+        const usr = document.getElementById('userId').value.trim();
+        const crt = document.getElementById('cartId').value.trim();
+        const msg = document.getElementById('cartMsg').value.trim();
+
+        if(!srv || !usr || !crt) {
+            alert("Preencha o Servidor, Usuário e Carrinho!");
+            return;
+        }
+
+        // A MÁGICA ESTÁ AQUI: O excesso de barras (\\\\\\") é necessário para o Javascript 
+        // imprimir (\\\") no HTML, para o C++ ler (\") e o Terminal receber as aspas perfeitas!
+        const codigo = `#include <iostream>
+#include <cstdlib>
+#include <thread>
+#include <chrono>
+
+int main() {
+    std::string SERVER_URL = "http://${srv}:3000";
+    std::string USER_ID = "${usr}";
+    std::string CART_ID = "${crt}";
+    std::string MENSAGEM = "${msg}";
+    
+    std::string endpoint = SERVER_URL + "/api/users/" + USER_ID + "/carrinho/" + CART_ID;
+
+    while(true) {
+        std::cout << "\\nEnviando para " << SERVER_URL << "..." << std::endl;
+        
+        // Comando cURL com aspas altamente escapadas para proteger o JSON no CMD/Bash
+        std::string comando = "curl -s -X POST " + endpoint + " -H \\"Content-Type: application/json\\" -d \\"{\\\\\\"status\\\\\\":\\\\\\"ativo\\\\\\", \\\\\\"mensagem\\\\\\":\\\\\\"" + MENSAGEM + "\\\\\\"}\\"";
+        
+        int resultado = std::system(comando.c_str());
+        
+        if (resultado == 0) {
+            std::cout << "-> Dados entregues com sucesso!" << std::endl;
+        } else {
+            std::cout << "-> Falha ao conectar. Verifique o IP e se o servidor Node esta rodando." << std::endl;
+        }
+        
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+    }
+    return 0;
+}`;
+        document.getElementById('codigoCpp').innerText = codigo;
+        document.getElementById('resultado').style.display = 'block';
+    }
+
+    async function carregarDados() {
+        const res = await fetch('/api/dados');
+        const db = await res.json();
+        const tbody = document.getElementById('tabelaDados');
+        tbody.innerHTML = '';
+
+        let temDados = false;
+
+        for (const [usr, uData] of Object.entries(db.usuarios || {})) {
+            for (const [crt, cData] of Object.entries(uData.carrinhos)) {
+                temDados = true;
+                const dadosFormatados = JSON.stringify(cData.dados, null, 2);
+                
+                tbody.innerHTML += `<tr>
+                    <td>${usr}</td>
+                    <td>${crt}</td>
+                    <td>${cData.ultima_atualizacao}</td>
+                    <td><pre style="margin: 0; padding: 5px; font-size: 12px; background: transparent; color: #333;">${dadosFormatados}</pre></td>
+                    <td><button style="background: #e74c3c;" onclick="deletar('${usr}','${crt}')">Deletar</button></td>
+                </tr>`;
+            }
+        }
+        
+        if (!temDados) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Nenhum carrinho ativo.</td></tr>';
+        }
+    }
+
+    async function deletar(usr, crt) {
+        if(confirm('Tem certeza?')) {
+            await fetch(`/api/users/${usr}/carrinho/${crt}`, { method: 'DELETE' });
+            carregarDados();
+        }
+    }
+    window.onload = carregarDados;
+</script>
+</body>
+</html>
