@@ -12,8 +12,7 @@ import threading
 # Services
 
 def main(page: ft.Page):
-    service = create_app(page, ft)
-    service.construir_page()
+   creatapp = CreatAPP (all class)
 
 if __name__ == "__main__":
     ft.app(target=main)

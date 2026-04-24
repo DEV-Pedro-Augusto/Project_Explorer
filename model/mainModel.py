@@ -1,12 +1,7 @@
-"""Main model container."""
-
-from __future__ import annotations
-
-from typing import Any, Optional
 
 
 class MainModel:
-    """Holds references to all models used by the application."""
+
 
     def __init__(
         self,
