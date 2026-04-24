@@ -1,3 +1,4 @@
+
 import time
 import threading
 
@@ -5,7 +6,7 @@ from api.service.app_services import AppServices
 
 # Views
 from view.main_view import MainView
-from view.pages.main_windows import MainWindow  
+from view.pages.main_windows import MainWindows
 from view.animations.button_animate import AnimacoesBotao
 from view.animations.page_animate import AnimacoesPage
 
@@ -23,10 +24,9 @@ from model.formate_model import DadosBruto, DadosFormatados
 from model.usuario_model import UsuarioModel
 
 from model.database import Database
-
-
 # Services
 from api.service.app_services import AppServices
+
 
 
 def create_app(page, ft):
@@ -34,6 +34,8 @@ def create_app(page, ft):
 
     # Cria o container principal de páginas
     main_view = MainView(
+        page,
+        ft,
         Dashboard,
         HomeView,
         InventoryView,
@@ -41,7 +43,7 @@ def create_app(page, ft):
         SettingsView
     )
 
-    view = MainWindow(
+    view = MainWindows(
         page,
         ft,
         AnimacoesPage,
@@ -56,7 +58,6 @@ def create_app(page, ft):
         Database(),
         CategoriaModel,
         ItemModel,
-        AcaoPageItem,
         UsuarioModel
 
     )
@@ -64,6 +65,7 @@ def create_app(page, ft):
     services = AppServices(models) 
 
     service.view = view
+    service.main_view = main_view
     service.models = models
     service.services = services
 

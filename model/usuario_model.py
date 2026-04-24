@@ -14,4 +14,5 @@ class UsuarioModel:
     def authenticate(self, username: str, password: str) -> bool:
         """Validate user credentials."""
         # TODO: implement authentication logic
-        return False
+        return True
+    
