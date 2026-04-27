@@ -32,15 +32,28 @@ from api.service.app_services import AppServices
 def create_app(page, ft):
     service = AppServices()
 
+    # Cria um objeto para armazenar as views
+    class ViewsContainer:
+        pass
+    
+    views_container = ViewsContainer()
+    views_container.homeView = HomeView
+    views_container.configuracoesView = SettingsView
+    views_container.devolucaoView = None
+    views_container.emprestimoView = Dashboard
+    views_container.cadastroItemView = None
+    views_container.inventarioView = InventoryView
+
     # Cria o container principal de páginas
     main_view = MainView(
         page,
         ft,
-        Dashboard,
-        HomeView,
-        InventoryView,
-        LoginView,
-        SettingsView
+        AnimacoesPage,      # animador_pagina
+        AnimacoesBotao,     # animador_botao
+        service,            # controller
+        views_container,    # main_view (contêiner de views)
+        time,               # time
+        threading           # threading
     )
 
     view = MainWindows(
