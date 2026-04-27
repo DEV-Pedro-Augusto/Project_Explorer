@@ -1,62 +1,24 @@
 """Home page."""
 
-from __future__ import annotations
 
-from typing import Any
-
-class HomePage:
-    def __init__(self, page, ft, animador_pagina, animador_botao, controller, main_window,time,threading):
+class MainView():
+    def __init__(self, page, ft, dashboard, home_view, inventory_view, login_view, settings_view):
         self.page = page
         self.ft = ft
-        self.animador_pagina = animador_pagina
-        self.animador_botao = animador_botao
-        self.controller = controller
-        self.main_window = main_window
+        self.dashboard = dashboard
+        self.home_view = home_view
+        self.inventory_view = inventory_view
+        self.login_view = login_view
+        self.settings_view = settings_view
         self.carregando = False
-        self.controller.view = self 
-        self.time = time 
-        self.threading = threading
+        self.time = __import__('time')
+        self.threading = __import__('threading')
 
 
-
-        self.main_window.homeView = self.main_window.homeView(
-                    self.ft, 
-                    self.animador_pagina,
-                    self.animador_botao,
-                    self.controller
-                )
-        self.main_window.configuracoesView = self.main_window.configuracoesView(
-                    self.ft, 
-                    self.animador_pagina,
-                    self.animador_botao,
-                    self.controller
-                )
-        self.main_window.devolucaoView = self.main_window.devolucaoView(
-                    self.ft, 
-                    self.animador_pagina,
-                    self.animador_botao,
-                    self.controller
-                )
-        self.main_window.emprestimoView = self.main_window.emprestimoView(
-                    self.ft, 
-                    self.animador_pagina,
-                    self.animador_botao,
-                    self.controller
-                )
-        self.main_window.cadastroItemView = self.main_window.cadastroItemView(
-                    self.ft, 
-                    self.animador_pagina,
-                    self.animador_botao,
-                    self.controller
-                )
-        self.main_window.inventarioView = self.main_window.inventarioView(
-                    self.ft, 
-                    self.animador_pagina,
-                    self.animador_botao,
-                    self.controller
-                )
-
-
+        # Armazena as instâncias das views
+        self._home_view_instance = None
+        self._settings_view_instance = None
+        self._inventory_view_instance = None
 
         self.container_conteudo = self.ft.Container(
             expand=True,
@@ -64,44 +26,56 @@ class HomePage:
             padding=20
         )
 
+    def get_home_view(self):
+        if self._home_view_instance is None:
+            self._home_view_instance = self.home_view(self)
+        return self._home_view_instance
 
+    def get_settings_view(self):
+        if self._settings_view_instance is None:
+            self._settings_view_instance = self.settings_view(self)
+        return self._settings_view_instance
+
+    def get_inventory_view(self):
+        if self._inventory_view_instance is None:
+            self._inventory_view_instance = self.inventory_view(self)
+        return self._inventory_view_instance
 
     def navegar(self, index):
-
         self.threading.Thread(target=self._processar_navegacao, args=(index,), daemon=True).start()
 
     def _processar_navegacao(self, index):
         self.carregando = True
-
-
         self.threading.Thread(target=self._monitorar_tempo_carregamento, daemon=True).start()
 
-
         if index == 0:
-            novo_conteudo = self._obter_conteudo_pages('homeView',self.main_window.homeView)
+
+            novo_conteudo = self._obter_conteudo_pages('HomeView', self.get_home_view)
         elif index == 1:
-            novo_conteudo = self._obter_conteudo_pages('emprestimoView',self.main_window.emprestimoView)
-        elif index == 2:
-            novo_conteudo = self._obter_conteudo_pages('devolucaoView',self.main_window.devolucaoView)
+            novo_conteudo = self._obter_conteudo_pages('Dashboard', self.dashboard)
         elif index == 3:
-              novo_conteudo =self._obter_conteudo_pages('inventarioView',self.main_window.inventarioView)
+            novo_conteudo = self._obter_conteudo_pages('InventoryView', self.get_inventory_view)
         elif index == 4:
-            novo_conteudo = self._obter_conteudo_pages('configuracoesView',self.main_window.configuracoesView)   
+            novo_conteudo = self._obter_conteudo_pages('SettingsView', self.get_settings_view)
+
         else:
             novo_conteudo = self.ft.Text("Fim das Escolas (Em construção)")
 
         self.carregando = False 
-
-
         self.container_conteudo.content = novo_conteudo
         self.container_conteudo.update()
 
     def _monitorar_tempo_carregamento(self):
-
         self.time.sleep(0.2)
         if self.carregando:
-            self.container_conteudo.content = self.animador_pagina(self.ft).carregamento_animacao()
+            self.container_conteudo.content = self.ft.Text("Carregando...")
             self.container_conteudo.update()
+
+    def _obter_conteudo_pages(self, nome_view, view_class):
+        """Retorna o conteúdo da view especificada."""
+        if hasattr(view_class, 'render'):
+            return view_class.render()
+        return self.ft.Text(f"{nome_view} (Em construção)")
 
 
 
