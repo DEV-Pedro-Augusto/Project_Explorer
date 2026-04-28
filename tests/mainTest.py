@@ -1,14 +1,10 @@
 import time
 
 class MainTest:
-    def __init__(self):
-        pass
+    def __init__(self,testApi,testController,testModel,testView):
+        self.testApi = testApi
+        self.testController = testController
+        self.testModel = testModel
+        self.testView = testView
 
-    def run_all_tests(self):
-        print("[TESTE] Iniciando verificação do sistema...")
-        # Simula checagem de banco de dados e rede
-        time.sleep(1) 
-        print("[TESTE] Rede OK.")
-        time.sleep(0.5)
-        print("[TESTE] Classes carregadas. Tudo pronto!")
-        return True # Se fosse False, o app pararia aqui
+    

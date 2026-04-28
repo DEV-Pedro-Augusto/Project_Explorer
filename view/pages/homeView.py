@@ -1,7 +1,7 @@
 """Home page."""
 
 
-class MainView():
+class HomeView():
     def __init__(self, page, ft, dashboard, home_view, inventory_view, login_view, settings_view):
         self.page = page
         self.ft = ft

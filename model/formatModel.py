@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any, Optional
 
 
-class AcaoPageItem:
+class FormatModel:
     """Represents an action or interaction on a page item."""
 
     def __init__(self, db: Optional[Any] = None):

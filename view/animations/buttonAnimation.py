@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 
-class AnimacoesBotao:
+class AnimationButton:
     """Handles button animation effects."""
 
     def __init__(self):

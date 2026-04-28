@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 
-class AnimacoesPage:
+class AnimationPage:
     """Handles page transition animations."""
 
     def __init__(self):
