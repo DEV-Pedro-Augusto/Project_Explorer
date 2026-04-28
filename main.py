@@ -3,9 +3,9 @@ from core.app_imports import create_app
 from model.database import Database
 
 def main(page: ft.Page):
-    service = create_app(page, ft)
-    service.main_view.main_view(page)
-
+    service = create_app(page, ft,)
+    page.add(service.view)
+    page.update()
 
 if __name__ == "__main__":
     ft.app(target=main)
@@ -15,5 +15,8 @@ if __name__ == "__main__":
         try:
             resposta = db_wrapper.client.table("dispositivos").select("nomes_dispositivos").execute()
             print(f"Robô encontrado: {resposta.data}")
+            robo = resposta.data
+            
         except Exception as e:
             print(f"❌ Erro na query: {e}")
+

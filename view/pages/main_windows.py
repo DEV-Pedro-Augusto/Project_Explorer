@@ -18,11 +18,27 @@ class MainWindows(ft.Row):
         self.time = time
         self.threading = threading
 
+        # Container de conteúdo que será atualizado pela navegação
+        self.container_conteudo = ft.Container(
+            expand=True,
+            content=ft.Text("Carregando...", color="white"),
+            padding=20
+        )
+
+        # Passa o container para o main_view
+        if hasattr(self.main_view, 'set_container'):
+            self.main_view.set_container(self.container_conteudo)
+
         self.controls = [
-            Sidebar(),
+            Sidebar(on_navigate=self.on_navigate),
             ft.Container(
                 expand=True,
-                bgcolor="#1A1D63",  # cor de fundo principal
-                content=ft.Text("Conteúdo principal aqui", color="white")
+                bgcolor="#1A1D63",
+                content=self.container_conteudo
             )
         ]
+
+    def on_navigate(self, index):
+        """Handle navigation from sidebar."""
+        if hasattr(self.main_view, 'navegar'):
+            self.main_view.navegar(index)
