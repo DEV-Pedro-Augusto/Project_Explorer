@@ -7,4 +7,3 @@ class MainTest:
         self.testModel = testModel
         self.testView = testView
 
-    

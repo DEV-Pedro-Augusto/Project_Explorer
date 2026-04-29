@@ -5,11 +5,11 @@ class MainModel:
 
     def __init__(
         self,
-        database: Any,
-        categoria_model: Any,
-        item_model: Any,
-        formatModel: Any,
-        usuario_model: Any,
+        database,
+        categoria_model,
+        item_model,
+        formatModel,
+        usuario_model,
     ):
         self.database = database
         self.categoria_model = categoria_model

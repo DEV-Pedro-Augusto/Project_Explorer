@@ -3,9 +3,11 @@
 class CategoriaModel:
   
 
-    def __init__(self, db: Optional[Any] = None):
-        self.db = db
+    def __init__(self,):
+        #self.db = db
         #self.dados = data
+        # db: Optional[Any] = None
+        pass
 
     def list_all(self) -> list:
         """Return all categories."""

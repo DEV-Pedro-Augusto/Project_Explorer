@@ -31,6 +31,7 @@ from model.usuarioModel import UsuarioModel
 
     # Routes
 from model.mainModel import MainModel
+from model.system import System
 
 
 #    CORE: Elemets core all 
@@ -55,7 +56,7 @@ from tests.mainTest import MainTest
 
 #    API: Elemets api  all
     # Api > Service
-from api.service import AppServices
+from api.service.app_services import AppServices
 
 
 #    CONTROLLER: Elemets controller all
@@ -67,9 +68,12 @@ def main(page: ft.Page):
     page.theme_mode = ft.ThemeMode.DARK # Modo Dark da sua imagem
     page.padding = 0
 
+
     CreateApp(
+        System(
         page,
-        mainView( 
+        ft,
+        MainView( 
             MainWindow(
                 DashboardView,
                 HomeView,
@@ -92,15 +96,16 @@ def main(page: ft.Page):
             UsuarioModel,
         ),
         MainTest(
-            testApi,
-            testController,
-            testModel,
-            testView
+            TestApi,
+            TestController,
+            TestModel,
+            TestView
         ),
         "Controller",
         AppServices
         )
-
+        )
+"""
     # Funções de Roteamento (Avançar as telas)
     def ir_para_dashboard(nome_carrinho):
         tela = DashboardView(page, nome_carrinho)
@@ -110,7 +115,7 @@ def main(page: ft.Page):
         tela = ProfileSelectionView(page, on_profile_selected=ir_para_dashboard)
         tela.render()
 
-    def ir_para_login():
+    def open_app():
         tela = LoginView(page, on_login_success=ir_para_selecao_perfil)
         tela.render()
 
@@ -120,10 +125,10 @@ def main(page: ft.Page):
 
     if sistema_ok:
         # 2. Se o teste passar, abre a primeira tela (Login)
-        initApp()
+        open_app()
     else:
         page.add(ft.Text("Erro Crítico: Falha nos testes de inicialização do sistema.", color=ft.colors.RED))
 
-
+"""
 if __name__ == "__main__":
     ft.app(target=main)

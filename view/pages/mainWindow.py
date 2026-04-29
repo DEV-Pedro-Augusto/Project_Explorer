@@ -1,10 +1,9 @@
-"""Main window implementation."""
 
 
 class MainWindow:
-    """Represents the main application window."""
+   
 
-    def __init__(
+    def __init__(self,
         Dashboard,
         Home,
         Inventory,
@@ -20,6 +19,3 @@ class MainWindow:
         self.settings = Settings
 
     
-
-
-
