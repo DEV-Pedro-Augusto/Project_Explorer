@@ -10,7 +10,7 @@ class CreateApp:
     def system_initialize(self):
 
         def openApp(system):
-            tela = system.view.page.login(system, on_login_success="")
+            tela = system.view.page.login(system,)
             tela.render()
 
 

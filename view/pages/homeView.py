@@ -1,24 +1,20 @@
-"""Home page."""
-
-
 class HomeView():
-    def __init__(self, page, ft, dashboard, home_view, inventory_view, login_view, settings_view):
-        self.page = page
-        self.ft = ft
-        self.dashboard = dashboard
-        self.home_view = home_view
-        self.inventory_view = inventory_view
-        self.login_view = login_view
-        self.settings_view = settings_view
+    def __init__(self, system):
+        self.system = system
+        self.page = system.page
+        self.ft = system.ft
+        
         self.carregando = False
         self.time = __import__('time')
         self.threading = __import__('threading')
 
-
-        # Armazena as instâncias das views
-        self._home_view_instance = None
+        # Cache das instâncias (Lazy Load)
+        self._dashboard_instance = None
         self._settings_view_instance = None
-        self._inventory_view_instance = None
+        self._notifications_instance = None
+        self._speed_instance = None
+        self._calendar_instance = None
+        self._events_instance = None
 
         self.container_conteudo = self.ft.Container(
             expand=True,
@@ -26,21 +22,43 @@ class HomeView():
             padding=20
         )
 
-    def get_home_view(self):
-        if self._home_view_instance is None:
-            self._home_view_instance = self.home_view(self)
-        return self._home_view_instance
+    # --- GETTERS DAS VIEWS (Usando a estrutura do seu MainWindow) ---
+    def get_dashboard_view(self):
+        if self._dashboard_instance is None:
+            # Chama o atributo 'dashboard' do seu MainWindow
+            dashboard_class = self.system.view.page.dashboard 
+            self._dashboard_instance = dashboard_class(self.system, "Robô de Teste")
+        return self._dashboard_instance
 
     def get_settings_view(self):
         if self._settings_view_instance is None:
-            self._settings_view_instance = self.settings_view(self)
+            # Chama o atributo 'settings' do seu MainWindow
+            settings_class = self.system.view.page.settings
+            self._settings_view_instance = settings_class(self.system)
         return self._settings_view_instance
 
-    def get_inventory_view(self):
-        if self._inventory_view_instance is None:
-            self._inventory_view_instance = self.inventory_view(self)
-        return self._inventory_view_instance
+    # Métodos para as views novas que criei abaixo
+    def get_notifications_view(self):
+        if self._notifications_instance is None:
+            self._notifications_instance = NotificationsView(self.system)
+        return self._notifications_instance
 
+    def get_speed_view(self):
+        if self._speed_instance is None:
+            self._speed_instance = SpeedView(self.system)
+        return self._speed_instance
+
+    def get_calendar_view(self):
+        if self._calendar_instance is None:
+            self._calendar_instance = CalendarView(self.system)
+        return self._calendar_instance
+
+    def get_events_view(self):
+        if self._events_instance is None:
+            self._events_instance = EventsView(self.system)
+        return self._events_instance
+
+    # --- LÓGICA DE NAVEGAÇÃO ---
     def navegar(self, index):
         self.threading.Thread(target=self._processar_navegacao, args=(index,), daemon=True).start()
 
@@ -48,18 +66,21 @@ class HomeView():
         self.carregando = True
         self.threading.Thread(target=self._monitorar_tempo_carregamento, daemon=True).start()
 
+        # Mapeando os 6 índices do menu
         if index == 0:
-
-            novo_conteudo = self._obter_conteudo_pages('HomeView', self.get_home_view)
+            novo_conteudo = self._obter_conteudo_pages('Dashboard', self.get_dashboard_view())
         elif index == 1:
-            novo_conteudo = self._obter_conteudo_pages('Dashboard', self.dashboard)
+            novo_conteudo = self._obter_conteudo_pages('Notificações', self.get_notifications_view())
+        elif index == 2:
+            novo_conteudo = self._obter_conteudo_pages('Velocidade', self.get_speed_view())
         elif index == 3:
-            novo_conteudo = self._obter_conteudo_pages('InventoryView', self.get_inventory_view)
+            novo_conteudo = self._obter_conteudo_pages('Calendário', self.get_calendar_view())
         elif index == 4:
-            novo_conteudo = self._obter_conteudo_pages('SettingsView', self.get_settings_view)
-
+            novo_conteudo = self._obter_conteudo_pages('Eventos', self.get_events_view())
+        elif index == 5:
+            novo_conteudo = self._obter_conteudo_pages('Configurações', self.get_settings_view())
         else:
-            novo_conteudo = self.ft.Text("Fim das Escolas (Em construção)")
+            novo_conteudo = self.ft.Text("Erro: Tela não encontrada", color=self.ft.Colors.WHITE)
 
         self.carregando = False 
         self.container_conteudo.content = novo_conteudo
@@ -68,79 +89,36 @@ class HomeView():
     def _monitorar_tempo_carregamento(self):
         self.time.sleep(0.2)
         if self.carregando:
-            self.container_conteudo.content = self.ft.Text("Carregando...")
+            self.container_conteudo.content = self.ft.Text("Carregando...", color=self.ft.Colors.WHITE)
             self.container_conteudo.update()
 
-    def _obter_conteudo_pages(self, nome_view, view_class):
-        """Retorna o conteúdo da view especificada."""
-        if hasattr(view_class, 'render'):
-            return view_class.render()
-        return self.ft.Text(f"{nome_view} (Em construção)")
+    def _obter_conteudo_pages(self, nome_view, view_instance):
+        if hasattr(view_instance, 'render'):
+            return view_instance.render()
+        return self.ft.Text(f"{nome_view} (Em construção)", color=self.ft.Colors.WHITE)
 
-
-
-    def _obter_conteudo_pages(self,local,caminho):
-        self.time.sleep(0.5) 
-        if hasattr(self.main_window,local) and hasattr(caminho, 'page'):
-             return caminho.page
-        else:
-             return self.ft.Text("Bem-vindo ao School Inventory")
-
-
-
-
-
-
-    def construir_pagina_principal(self):
-
-
-
+    # --- CONSTRUÇÃO DA PÁGINA PRINCIPAL ---
+    def render(self):
         self.page.clean()
-
-        self.page.title = "School Inventory"
-        self.page.window_width = 800
-        self.page.window_height = 600
-        self.page.window_resizable = True
-        self.page.theme_mode = self.ft.ThemeMode.LIGHT
         self.page.padding = 0
         self.page.margin = 0
+        self.page.bgcolor = "#060A14"
 
         menu_lateral = self.ft.NavigationRail(
             selected_index=0,
-            label_type=self.ft.NavigationRailLabelType.ALL,
-            min_width=90,
-            min_extended_width=220,
+            label_type=self.ft.NavigationRailLabelType.NONE, 
+            bgcolor="#060A14",
+            indicator_color="#1A2235",
+            min_width=70,
             group_alignment=-0.9,
-            indicator_color=self.ft.Colors.BLUE_GREY_100,
-            indicator_shape=self.ft.RoundedRectangleBorder(radius=12),
-            leading=self.ft.Container(height=20),
             on_change=lambda e: self.navegar(e.control.selected_index),
             destinations=[
-                self.ft.NavigationRailDestination(
-                    icon="home",
-                    label="Home",
-                    selected_icon=self.ft.Icons.HOME_OUTLINED
-                ),
-                self.ft.NavigationRailDestination(
-                    icon=self.ft.Icons.OUTBOX,
-                    label="Emprestar",
-                    selected_icon=self.ft.Icons.OUTBOX_OUTLINED
-                ),
-                self.ft.NavigationRailDestination(
-                    icon=self.ft.Icons.MOVE_TO_INBOX_ROUNDED,
-                    label="Devolução",
-                    selected_icon=self.ft.Icons.MOVE_TO_INBOX_OUTLINED
-                ),
-                self.ft.NavigationRailDestination(
-                    icon="inventory",
-                    label="Inventário",
-                    selected_icon=self.ft.Icons.INVENTORY_2_OUTLINED
-                ),
-                self.ft.NavigationRailDestination(
-                    icon="settings",
-                    label="Configurações",
-                    selected_icon=self.ft.Icons.SETTINGS_OUTLINED
-                ),
+                self.ft.NavigationRailDestination(icon=self.ft.Icons.HOME_OUTLINED, selected_icon=self.ft.Icons.HOME),
+                self.ft.NavigationRailDestination(icon=self.ft.Icons.NOTIFICATIONS_OUTLINED, selected_icon=self.ft.Icons.NOTIFICATIONS),
+                self.ft.NavigationRailDestination(icon=self.ft.Icons.SPEED_OUTLINED, selected_icon=self.ft.Icons.SPEED),
+                self.ft.NavigationRailDestination(icon=self.ft.Icons.CALENDAR_TODAY_OUTLINED, selected_icon=self.ft.Icons.CALENDAR_TODAY),
+                self.ft.NavigationRailDestination(icon=self.ft.Icons.EMOJI_EVENTS_OUTLINED, selected_icon=self.ft.Icons.EMOJI_EVENTS),
+                self.ft.NavigationRailDestination(icon=self.ft.Icons.SETTINGS_OUTLINED, selected_icon=self.ft.Icons.SETTINGS),
             ]
         )
 
@@ -150,14 +128,15 @@ class HomeView():
             controls=[
                 self.ft.Container(
                     content=self.ft.Text(
-                        "School Inventory Controller",
-                        size=30,
+                        "Controllers the Car Sensor",
+                        size=24,
                         weight=self.ft.FontWeight.W_900,
+                        color=self.ft.Colors.WHITE,
                         selectable=True,
                     ),
-                    padding=30,
-                    bgcolor="grey200",
-                    alignment=self.ft.alignment.center,
+                    padding=20,
+                    bgcolor="#060A14",
+                    alignment=self.ft.alignment.center_left,
                     width=float('inf')
                 ),
                 self.ft.Row(
@@ -166,7 +145,7 @@ class HomeView():
                     vertical_alignment=self.ft.CrossAxisAlignment.START,
                     controls=[
                         menu_lateral,
-                        self.ft.VerticalDivider(width=1, color="grey300"),
+                        self.ft.VerticalDivider(width=1, color="#1A2235"),
                         self.container_conteudo
                     ]
                 )
