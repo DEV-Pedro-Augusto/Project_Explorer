@@ -25,9 +25,10 @@ class Dashboard:
                     content=ft.Column([
                         self.ft.Text("Estatísticas", size=20, weight="bold"),
                         self.ft.Divider(),
-                        self.ft.Text("Emprestimos Ativos: 45", size=16),
-                        self.ft.Text("Devoluções Pendentes: 12", size=16),
-                        self.ft.Text("Itens em Manutenção: 3", size=16)
+                        self.ft.Text("Carrinhos Ativos: 1", size=16),
+                        self.ft.Text("Carrinhos Inativos: 12", size=16),
+                        self.ft.Text("Carrinhos Mortos: 3", size=16),
+                        self.ft.Text("Perdidos: 5", size=16)
                     ], spacing=10)
                 )
             ], spacing=10)

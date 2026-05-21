@@ -37,7 +37,7 @@ class InventoryView:
                 self.ft.Divider(height=20, color="transparent"),
                 self.ft.ElevatedButton(
                     "Adicionar Item", icon=self.ft.Icons.ADD, height=50,
-                    bgcolor="blue", color="white", on_click=self.abrir_add
+                    bgcolor="", color="white", on_click=self.abrir_add
                 ),
                 self.ft.Divider(),
                 self.grid

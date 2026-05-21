@@ -33,8 +33,9 @@ class MainWindows(ft.Row):
             Sidebar(on_navigate=self.on_navigate),
             ft.Container(
                 expand=True,
-                bgcolor="#1A1D63",
-                content=self.container_conteudo
+                bgcolor="#040730",
+                content=self.container_conteudo,
+
             )
         ]
 

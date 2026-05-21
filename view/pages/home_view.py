@@ -29,21 +29,28 @@ class HomeView:
                             self.ft.Container(
                                 padding=20, bgcolor="#4CAF50", border_radius=10, expand=1,
                                 content=ft.Column([
-                                    self.ft.Text("Itens Disponíveis", size=14, color="white"),
+                                    self.ft.Text("Carrinhos Ativos", size=14, color="white"),
                                     self.ft.Text("150", size=36, weight="bold", color="white")
                                 ])
                             ),
                             self.ft.Container(
-                                padding=20, bgcolor="#FF9800", border_radius=10, expand=1,
+                                padding=20, bgcolor="#FF9900", border_radius=10, expand=1,
                                 content=ft.Column([
-                                    self.ft.Text("Emprestados", size=14, color="white"),
+                                    self.ft.Text("Carrinhos Inativos", size=14, color="white"),
                                     self.ft.Text("45", size=36, weight="bold", color="white")
                                 ])
                             ),
                             self.ft.Container(
-                                padding=20, bgcolor="#2196F3", border_radius=10, expand=1,
+                                padding=20, bgcolor="#FF0000", border_radius=10, expand=1,
                                 content=ft.Column([
-                                    self.ft.Text("Total", size=14, color="white"),
+                                    self.ft.Text("Carrinhos Perdidos", size=14, color="white"),
+                                    self.ft.Text("195", size=36, weight="bold", color="white")
+                                ])
+                            ),
+                            self.ft.Container(
+                                padding=20, bgcolor="#6905A3", border_radius=10, expand=1,
+                                content=ft.Column([
+                                    self.ft.Text("Carrinhos Destruidos", size=14, color="white"),
                                     self.ft.Text("195", size=36, weight="bold", color="white")
                                 ])
                             )

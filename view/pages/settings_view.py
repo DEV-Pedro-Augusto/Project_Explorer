@@ -19,7 +19,7 @@ class SettingsView:
             padding=20,
             content=ft.Column([
                 self.ft.Text("Configurações", size=28, weight="bold", color="white"),
-                self.ft.Divider(height=30, color="transparent"),
+                self.ft.Divider(height=30, color="glassmorphism"),
                 self.ft.Container(
                     padding=20, bgcolor="white", border_radius=10,
                     content=ft.Column([
@@ -27,7 +27,7 @@ class SettingsView:
                         self.ft.Divider(),
                         self.ft.TextField(label="Nome", value="Administrador"),
                         self.ft.TextField(label="Email", value="admin@sistema.com"),
-                        self.ft.ElevatedButton("Salvar", bgcolor="blue", color="white", height=50)
+                        self.ft.ElevatedButton("Salvar", bgcolor="#040730", color="white", height=50)
                     ], spacing=15)
                 )
             ], spacing=10)

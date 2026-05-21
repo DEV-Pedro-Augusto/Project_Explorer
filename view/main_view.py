@@ -3,7 +3,7 @@ from view.pages.main_windows import MainWindows
 
 class MainView():
     def __init__(self, page, ft, dashboard, home_view, inventory_view, login_view, settings_view):
-        self.page = page
+        self.page = page.bgcolor = "#040730"
         self.ft = ft
         self.dashboard = dashboard
         self.home_view = home_view
@@ -72,5 +72,5 @@ class MainView():
     def _monitorar_tempo_carregamento(self):
         self.time.sleep(0.2)
         if self.carregando and self.container_conteudo:
-            self.container_conteudo.content = self.ft.Text("Carregando...", size=16)
+            self.container_conteudo.content = self.ft.Text("Carregando...", size=16, style="italic", color="white", center=True)
             self.container_conteudo.update()
