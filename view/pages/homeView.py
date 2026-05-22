@@ -26,36 +26,34 @@ class HomeView():
     def get_dashboard_view(self):
         if self._dashboard_instance is None:
             # Chama o atributo 'dashboard' do seu MainWindow
-            dashboard_class = self.system.view.page.dashboard 
-            self._dashboard_instance = dashboard_class(self.system, "Robô de Teste")
+            self._dashboard_instance = self.system.view.page.elementsTheAppbar.dashboard(self.system, "Robô de Teste")
         return self._dashboard_instance
 
     def get_settings_view(self):
         if self._settings_view_instance is None:
             # Chama o atributo 'settings' do seu MainWindow
-            settings_class = self.system.view.page.settings
-            self._settings_view_instance = settings_class(self.system)
+            self._settings_view_instance = self.system.view.page.elementsTheAppbar.settings(self.system)
         return self._settings_view_instance
 
     # Métodos para as views novas que criei abaixo
     def get_notifications_view(self):
         if self._notifications_instance is None:
-            self._notifications_instance = NotificationsView(self.system)
+            self._notifications_instance = self.system.view.page.elementsTheAppbar.notifications(self.system)
         return self._notifications_instance
 
     def get_speed_view(self):
         if self._speed_instance is None:
-            self._speed_instance = SpeedView(self.system)
+            self._speed_instance = self.system.view.page.elementsTheAppbar.speed(self.system)
         return self._speed_instance
 
     def get_calendar_view(self):
         if self._calendar_instance is None:
-            self._calendar_instance = CalendarView(self.system)
+            self._calendar_instance = self.system.view.page.elementsTheAppbar.calendar(self.system)
         return self._calendar_instance
 
     def get_events_view(self):
         if self._events_instance is None:
-            self._events_instance = EventsView(self.system)
+            self._events_instance = self.system.view.page.elementsTheAppbar.events(self.system)
         return self._events_instance
 
     # --- LÓGICA DE NAVEGAÇÃO ---

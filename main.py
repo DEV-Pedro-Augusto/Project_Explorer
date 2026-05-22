@@ -5,19 +5,30 @@ import flet as ft
     # Pages
 from view.pages.loginView import LoginView
 from view.pages.profileSelectionView import ProfileSelectionView
-from view.pages.dashboardView import DashboardView
 from view.pages.homeView import HomeView
 from view.pages.inventoryView import InventoryView
-from view.pages.settingsView import SettingsView
+from view.pages.settingsView import SettingView
+
+    # Elements the Appbar 
+from view.pages.elementstheappbar.dashboardView import DashboardView
+from view.pages.elementstheappbar.eventsView import EventsView
+from view.pages.elementstheappbar.notificationsView import NotificationsView
+from view.pages.elementstheappbar.settingsView import SettingsView
+from view.pages.elementstheappbar.speedView import SpeedView
+from view.pages.elementstheappbar.calendar import CalendarView
 
     # Animations
 from view.animations.buttonAnimation import AnimationButton
 from view.animations.pageAnimation import AnimationPage
 
+   
+
     # Routes
 from view.mainView import MainView
 from view.pages.mainWindow import MainWindow
+from view.pages.elementstheappbar.mainElementsTheAppbar import MainElementsAppbar
 from view.animations.mainAnimation import MainAnimate
+
 
 
 #    MODEL: Elements model all 
@@ -75,13 +86,21 @@ def main(page: ft.Page):
         ft,
         MainView( 
             MainWindow(
-                DashboardView,
                 HomeView,
                 InventoryView,
                 LoginView,
                 ProfileSelectionView,
-                SettingsView
+                SettingView,
+                MainElementsAppbar(
+                    DashboardView,
+                    NotificationsView,
+                    SpeedView,
+                    CalendarView,
+                    EventsView,
+                    SettingsView   
+                ),
             ),
+            
             MainAnimate(
                 AnimationButton,
                 AnimationPage
