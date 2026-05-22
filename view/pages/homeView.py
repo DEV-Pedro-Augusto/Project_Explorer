@@ -22,20 +22,17 @@ class HomeView():
             padding=20
         )
 
-    # --- GETTERS DAS VIEWS (Usando a estrutura do seu MainWindow) ---
+    # --- GETTERS DAS VIEWS ---
     def get_dashboard_view(self):
         if self._dashboard_instance is None:
-            # Chama o atributo 'dashboard' do seu MainWindow
             self._dashboard_instance = self.system.view.page.elementsTheAppbar.dashboard(self.system, "Robô de Teste")
         return self._dashboard_instance
 
     def get_settings_view(self):
         if self._settings_view_instance is None:
-            # Chama o atributo 'settings' do seu MainWindow
             self._settings_view_instance = self.system.view.page.elementsTheAppbar.settings(self.system)
         return self._settings_view_instance
 
-    # Métodos para as views novas que criei abaixo
     def get_notifications_view(self):
         if self._notifications_instance is None:
             self._notifications_instance = self.system.view.page.elementsTheAppbar.notifications(self.system)
@@ -64,7 +61,6 @@ class HomeView():
         self.carregando = True
         self.threading.Thread(target=self._monitorar_tempo_carregamento, daemon=True).start()
 
-        # Mapeando os 6 índices do menu
         if index == 0:
             novo_conteudo = self._obter_conteudo_pages('Dashboard', self.get_dashboard_view())
         elif index == 1:
@@ -95,6 +91,17 @@ class HomeView():
             return view_instance.render()
         return self.ft.Text(f"{nome_view} (Em construção)", color=self.ft.Colors.WHITE)
 
+    # --- FUNÇÃO DO BOTÃO SAIR ---
+    def voltar_para_profile(self, e):
+        """Limpa a tela e renderiza a ProfileSelectionView"""
+        # Puxa a classe profileSelection do seu MainWindow
+        profile_class = self.system.view.page.profileSelection
+        profile_instance = profile_class(self.system)
+        
+        # Renderiza a tela de perfil
+        if hasattr(profile_instance, 'render'):
+            profile_instance.render()
+
     # --- CONSTRUÇÃO DA PÁGINA PRINCIPAL ---
     def render(self):
         self.page.clean()
@@ -124,19 +131,34 @@ class HomeView():
             expand=True,
             spacing=0,
             controls=[
+                # --- CABEÇALHO COM TÍTULO E BOTÃO DE SAIR ---
                 self.ft.Container(
-                    content=self.ft.Text(
-                        "Controllers the Car Sensor",
-                        size=24,
-                        weight=self.ft.FontWeight.W_900,
-                        color=self.ft.Colors.WHITE,
-                        selectable=True,
+                    content=self.ft.Row(
+                        controls=[
+                            self.ft.Text(
+                                "Controllers the Car Sensor",
+                                size=24,
+                                weight=self.ft.FontWeight.W_900,
+                                color=self.ft.Colors.WHITE,
+                                selectable=True,
+                            ),
+                            # Botão de Sair no canto direito
+                            self.ft.IconButton(
+                                icon=self.ft.Icons.LOGOUT,
+                                icon_color=self.ft.Colors.RED_400,
+                                icon_size=28,
+                                tooltip="Sair para Seleção de Perfil",
+                                on_click=self.voltar_para_profile
+                            )
+                        ],
+                        alignment=self.ft.MainAxisAlignment.SPACE_BETWEEN, # Separa título (esquerda) e botão (direita)
+                        vertical_alignment=self.ft.CrossAxisAlignment.CENTER
                     ),
                     padding=20,
                     bgcolor="#060A14",
-                    alignment=self.ft.alignment.center_left,
                     width=float('inf')
                 ),
+                # --- CORPO PRINCIPAL (Menu Lateral + Conteúdo) ---
                 self.ft.Row(
                     expand=True,
                     spacing=0,

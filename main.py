@@ -1,4 +1,5 @@
 import flet as ft
+import time
 
 #    VIEW: Elements view all
     
@@ -8,6 +9,7 @@ from view.pages.profileSelectionView import ProfileSelectionView
 from view.pages.homeView import HomeView
 from view.pages.inventoryView import InventoryView
 from view.pages.settingsView import SettingView
+from view.pages.cadastroView import CadastroView
 
     # Elements the Appbar 
 from view.pages.elementstheappbar.dashboardView import DashboardView
@@ -84,6 +86,7 @@ def main(page: ft.Page):
         System(
         page,
         ft,
+        time,
         MainView( 
             MainWindow(
                 HomeView,
@@ -91,6 +94,7 @@ def main(page: ft.Page):
                 LoginView,
                 ProfileSelectionView,
                 SettingView,
+                CadastroView,
                 MainElementsAppbar(
                     DashboardView,
                     NotificationsView,

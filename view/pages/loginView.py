@@ -1,4 +1,4 @@
-import flet as ft
+
 import time
 
 class LoginView:
@@ -30,8 +30,7 @@ class LoginView:
             self.system.page.update()
 
         def register_click(e):
-            print("Redirecionando para a tela de Cadastro...")
-            # self.on_register_click()  <-- Descomente para mudar de tela
+           self.system.view.page.cadastro(self.system).render()
 
         # --- CONSTRUÇÃO DA UI (LADO ESQUERDO) ---
 
