@@ -2,9 +2,23 @@ import flet as ft
 import time
 
 class ProfileSelectionView:
-    def __init__(self, page: ft.Page, on_profile_selected):
+    def __init__(self, page: ft.Page, on_profile_selected, db_client=None):
         self.page = page
         self.on_profile_selected = on_profile_selected
+        self.db_client = db_client
+
+    def _load_carrinhos(self) -> list:
+        """Carrega os carrinhos/dispositivos do banco de dados."""
+        if not self.db_client:
+            return []
+        try:
+            resposta = self.db_client.table("dispositivos").select(
+                "id_dispositivos, nomes_dispositivos"
+            ).execute()
+            return resposta.data or []
+        except Exception as e:
+            print(f"Erro ao carregar carrinhos: {e}")
+            return []
 
     def render(self):
         self.page.clean()
@@ -99,13 +113,32 @@ class ProfileSelectionView:
                 )
 
             grid_perfis = ft.Row(
-                [
-                    criar_bolha_perfil("Maquinhos", ["#FF007F", "#7F00FF"]), 
-                    criar_bolha_perfil("Rodinha", ["#0052D4", "#6FB1FC"]),   
-                    criar_bolha_perfil("Adicionar", [], is_add_button=True)
-                ],
+                [],  # Será preenchido dinamicamente
                 alignment=ft.MainAxisAlignment.CENTER, spacing=50
             )
+
+            # Carrega os carrinhos e preenche a grid
+            carrinhos = self._load_carrinhos()
+            cores_padrao = [
+                ["#FF007F", "#7F00FF"],
+                ["#0052D4", "#6FB1FC"],
+                ["#FF6B6B", "#FF8C42"],
+                ["#4ECDC4", "#44A08D"],
+                ["#9B59B6", "#8E44AD"],
+            ]
+            
+            # Criar bolhas para cada carrinho
+            bolhas_carrinhos = []
+            for idx, carrinho in enumerate(carrinhos):
+                nome = carrinho.get('nomes_dispositivos', f'Carrinho {idx + 1}')
+                cores = cores_padrao[idx % len(cores_padrao)]
+                bolhas_carrinhos.append(criar_bolha_perfil(nome, cores))
+            
+            # Adicionar botão de adicionar novo perfil
+            bolhas_carrinhos.append(criar_bolha_perfil("Adicionar", [], is_add_button=True))
+            
+            # Preencher a grid com as bolhas
+            grid_perfis.controls = bolhas_carrinhos
 
             return ft.Column(
                 [

@@ -1,9 +1,13 @@
 import flet as ft
+from view.pages.inventoryView import InventoryView
+from view.pages.sidebar import Sidebar
 
 class DashboardView:
-    def __init__(self, page: ft.Page, nome_carrinho):
+    def __init__(self, page: ft.Page, nome_carrinho, db_client=None):
         self.page = page
         self.nome_carrinho = nome_carrinho
+        self.db_client = db_client
+        self.current_view = 0  # Rastreia a view atual
 
     def mostrar_popup_pareamento(self):
         dlg = ft.AlertDialog(
@@ -23,27 +27,40 @@ class DashboardView:
         dlg.open = False
         self.page.update()
 
+    def handle_navigation(self, index):
+        """Gerencia a navegação entre as diferentes seções do dashboard."""
+        self.current_view = index
+        if index == 0:
+            # Home/Dashboard
+            self.render()
+        elif index == 1:
+            # Notificações
+            self.page.clean()
+            self.page.add(ft.Text("Notificações (Em construção)", color=ft.Colors.WHITE, size=24))
+        elif index == 2:
+            # Status/Velocidade
+            self.page.clean()
+            self.page.add(ft.Text("Status do Sistema (Em construção)", color=ft.Colors.WHITE, size=24))
+        elif index == 3:
+            # Calendário
+            self.page.clean()
+            self.page.add(ft.Text("Calendário (Em construção)", color=ft.Colors.WHITE, size=24))
+        elif index == 4:
+            # Configurações
+            self.page.clean()
+            self.page.add(ft.Text("Configurações (Em construção)", color=ft.Colors.WHITE, size=24))
+        elif index == 5:
+            # Eventos/Prêmios
+            self.page.clean()
+            self.page.add(ft.Text("Eventos (Em construção)", color=ft.Colors.WHITE, size=24))
+
     def render(self):
         self.page.clean()
         self.page.bgcolor = "#060A14" # Fundo principal super escuro (Deep Navy)
         self.page.padding = 10
         
         # --- SIDEBAR (Barra Lateral Esquerda) ---
-        sidebar = ft.NavigationRail(
-            selected_index=0,
-            label_type=ft.NavigationRailLabelType.NONE, # Oculta os textos igual na imagem
-            bgcolor="#060A14",
-            indicator_color="#1A2235",
-            min_width=70,
-            destinations=[
-                ft.NavigationRailDestination(icon=ft.Icons.HOME_OUTLINED, selected_icon=ft.Icons.HOME),
-                ft.NavigationRailDestination(icon=ft.Icons.NOTIFICATIONS_OUTLINED, selected_icon=ft.Icons.NOTIFICATIONS),
-                ft.NavigationRailDestination(icon=ft.Icons.SPEED_OUTLINED, selected_icon=ft.Icons.SPEED),
-                ft.NavigationRailDestination(icon=ft.Icons.CALENDAR_TODAY_OUTLINED, selected_icon=ft.Icons.CALENDAR_TODAY),
-                ft.NavigationRailDestination(icon=ft.Icons.EMOJI_EVENTS_OUTLINED, selected_icon=ft.Icons.EMOJI_EVENTS),
-                ft.NavigationRailDestination(icon=ft.Icons.SETTINGS_OUTLINED, selected_icon=ft.Icons.SETTINGS),
-            ]
-        )
+        sidebar = Sidebar(on_navigate=self.handle_navigation)
 
         # --- FUNÇÕES GERADORAS DE COMPONENTES ---
 
@@ -99,6 +116,19 @@ class DashboardView:
         )
 
         top_section = ft.Row([alert_card, sensors_row], spacing=20)
+
+        inventory_button = ft.Container(
+            content=ft.ElevatedButton(
+                "Ver inventário completo",
+                on_click=lambda e: InventoryView(self.page, self.db_client, on_back=self.render).render(),
+                bgcolor="#2563EB",
+                color=ft.Colors.WHITE,
+                width=220,
+                height=48
+            ),
+            alignment=ft.alignment.center_left,
+            padding=ft.padding.symmetric(vertical=10)
+        )
 
         # 3. Cartões de Status (A linha do meio)
         def create_info_card(title, value, icon_name=None, highlight=False):
@@ -157,6 +187,7 @@ class DashboardView:
         # --- MONTAGEM DO LAYOUT FINAL ---
         area_dashboard = ft.Column([
             top_section,
+            inventory_button,
             ft.Container(height=10),
             status_row,
             ft.Container(height=10),
@@ -171,6 +202,8 @@ class DashboardView:
         ], expand=True)
         
         self.page.add(layout_principal)
+        self.page.update()
         
-        # Dispara o popup logo após desenhar a tela
-        self.mostrar_popup_pareamento()
+        # Dispara o popup logo após desenhar a tela (apenas na primeira renderização)
+        if self.current_view == 0:
+            self.mostrar_popup_pareamento()
