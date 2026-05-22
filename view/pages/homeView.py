@@ -1,8 +1,8 @@
 class HomeView():
     def __init__(self, system):
-        self.system = system
-        self.page = system.page
-        self.ft = system.ft
+        self.system = system 
+        self.page = system.page 
+        self.ft = system.ft 
         
         self.carregando = False
         self.time = __import__('time')
@@ -15,6 +15,7 @@ class HomeView():
         self._speed_instance = None
         self._calendar_instance = None
         self._events_instance = None
+        self._inventory_instance = None # Adicionado cache do inventário
 
         self.container_conteudo = self.ft.Container(
             expand=True,
@@ -53,6 +54,13 @@ class HomeView():
             self._events_instance = self.system.view.page.elementsTheAppbar.events(self.system)
         return self._events_instance
 
+    # Novo Getter do Inventário
+    def get_inventory_view(self):
+        if self._inventory_instance is None:
+            self._inventory_instance = self.system.view.page.elementsTheAppbar.inventory(self.system)
+        return self._inventory_instance
+
+
     # --- LÓGICA DE NAVEGAÇÃO ---
     def navegar(self, index):
         self.threading.Thread(target=self._processar_navegacao, args=(index,), daemon=True).start()
@@ -61,6 +69,7 @@ class HomeView():
         self.carregando = True
         self.threading.Thread(target=self._monitorar_tempo_carregamento, daemon=True).start()
 
+        # Mapeando os índices do menu (agora são 7 opções, de 0 a 6)
         if index == 0:
             novo_conteudo = self._obter_conteudo_pages('Dashboard', self.get_dashboard_view())
         elif index == 1:
@@ -71,7 +80,9 @@ class HomeView():
             novo_conteudo = self._obter_conteudo_pages('Calendário', self.get_calendar_view())
         elif index == 4:
             novo_conteudo = self._obter_conteudo_pages('Eventos', self.get_events_view())
-        elif index == 5:
+        elif index == 5: # ÍNDICE 5 AGORA É O INVENTÁRIO
+            novo_conteudo = self._obter_conteudo_pages('Inventário', self.get_inventory_view())
+        elif index == 6: # ÍNDICE 6 AGORA SÃO AS CONFIGURAÇÕES
             novo_conteudo = self._obter_conteudo_pages('Configurações', self.get_settings_view())
         else:
             novo_conteudo = self.ft.Text("Erro: Tela não encontrada", color=self.ft.Colors.WHITE)
@@ -94,11 +105,9 @@ class HomeView():
     # --- FUNÇÃO DO BOTÃO SAIR ---
     def voltar_para_profile(self, e):
         """Limpa a tela e renderiza a ProfileSelectionView"""
-        # Puxa a classe profileSelection do seu MainWindow
         profile_class = self.system.view.page.profileSelection
         profile_instance = profile_class(self.system)
         
-        # Renderiza a tela de perfil
         if hasattr(profile_instance, 'render'):
             profile_instance.render()
 
@@ -123,6 +132,8 @@ class HomeView():
                 self.ft.NavigationRailDestination(icon=self.ft.Icons.SPEED_OUTLINED, selected_icon=self.ft.Icons.SPEED),
                 self.ft.NavigationRailDestination(icon=self.ft.Icons.CALENDAR_TODAY_OUTLINED, selected_icon=self.ft.Icons.CALENDAR_TODAY),
                 self.ft.NavigationRailDestination(icon=self.ft.Icons.EMOJI_EVENTS_OUTLINED, selected_icon=self.ft.Icons.EMOJI_EVENTS),
+                # INVENTÁRIO ADICIONADO AQUI
+                self.ft.NavigationRailDestination(icon=self.ft.Icons.INVENTORY_2_OUTLINED, selected_icon=self.ft.Icons.INVENTORY),
                 self.ft.NavigationRailDestination(icon=self.ft.Icons.SETTINGS_OUTLINED, selected_icon=self.ft.Icons.SETTINGS),
             ]
         )
@@ -142,7 +153,6 @@ class HomeView():
                                 color=self.ft.Colors.WHITE,
                                 selectable=True,
                             ),
-                            # Botão de Sair no canto direito
                             self.ft.IconButton(
                                 icon=self.ft.Icons.LOGOUT,
                                 icon_color=self.ft.Colors.RED_400,
@@ -151,7 +161,7 @@ class HomeView():
                                 on_click=self.voltar_para_profile
                             )
                         ],
-                        alignment=self.ft.MainAxisAlignment.SPACE_BETWEEN, # Separa título (esquerda) e botão (direita)
+                        alignment=self.ft.MainAxisAlignment.SPACE_BETWEEN,
                         vertical_alignment=self.ft.CrossAxisAlignment.CENTER
                     ),
                     padding=20,

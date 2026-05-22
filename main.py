@@ -7,7 +7,6 @@ import time
 from view.pages.loginView import LoginView
 from view.pages.profileSelectionView import ProfileSelectionView
 from view.pages.homeView import HomeView
-from view.pages.inventoryView import InventoryView
 from view.pages.settingsView import SettingView
 from view.pages.cadastroView import CadastroView
 
@@ -17,6 +16,7 @@ from view.pages.elementstheappbar.eventsView import EventsView
 from view.pages.elementstheappbar.notificationsView import NotificationsView
 from view.pages.elementstheappbar.settingsView import SettingsView
 from view.pages.elementstheappbar.speedView import SpeedView
+from view.pages.elementstheappbar.inventoryView import InventoryView
 from view.pages.elementstheappbar.calendar import CalendarView
 
     # Animations
@@ -89,8 +89,7 @@ def main(page: ft.Page):
         time,
         MainView( 
             MainWindow(
-                HomeView,
-                InventoryView,
+                HomeView, 
                 LoginView,
                 ProfileSelectionView,
                 SettingView,
@@ -101,7 +100,8 @@ def main(page: ft.Page):
                     SpeedView,
                     CalendarView,
                     EventsView,
-                    SettingsView   
+                    SettingsView,
+                    InventoryView
                 ),
             ),
             

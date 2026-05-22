@@ -5,7 +5,6 @@ class MainWindow:
 
     def __init__(self,
         Home,
-        Inventory,
         Login,
         ProfileSelection,
         Settings,
@@ -14,7 +13,6 @@ class MainWindow:
 ):
      
         self.home = Home
-        self.inventory = Inventory
         self.login = Login 
         self.profileSelection =  ProfileSelection
         self.settings = Settings
