@@ -9,6 +9,7 @@ from view.pages.profileSelectionView import ProfileSelectionView
 from view.pages.homeView import HomeView
 from view.pages.settingsView import SettingView
 from view.pages.cadastroView import CadastroView
+from view.pages.cadastroCarrinhoView import CadastroCarrinhoView
 
     # Elements the Appbar 
 from view.pages.elementstheappbar.dashboardView import DashboardView
@@ -94,6 +95,7 @@ def main(page: ft.Page):
                 ProfileSelectionView,
                 SettingView,
                 CadastroView,
+                CadastroCarrinhoView,
                 MainElementsAppbar(
                     DashboardView,
                     NotificationsView,
@@ -112,7 +114,7 @@ def main(page: ft.Page):
             )
         ),
         MainModel(
-            Database,
+            Database(),
             CategoriaModel,
             ItemModel,
             FormatModel,
@@ -154,4 +156,21 @@ def main(page: ft.Page):
 
 """
 if __name__ == "__main__":
+    db_wrapper = Database()
+    if db_wrapper.client:
+        # Usamos o atributo 'client' da instância para fazer a query
+        try:
+            resposta = db_wrapper.client.table("dispositivos").select("nomes_dispositivos").execute()
+            print(f"Robô encontrado: {resposta.data}")
+            db_wrapper.listar_itens()
+            db_wrapper.listar_logins()
+            db_wrapper.listar_sensores()
+            db_wrapper.exibir_catalogo_de_status()
+            db_wrapper.buscar_relatorio_por_status(1)
+            db_wrapper.buscar_relatorio_por_sensor(1)  # Exemplo com
+
+        except Exception as e:
+            print(f"Erro na query: {e}")
+    else:
+        print("Banco de dados iniciado corretamente.")
     ft.app(target=main)

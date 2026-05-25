@@ -9,6 +9,7 @@ class MainWindow:
         ProfileSelection,
         Settings,
         cadastro,
+        cadastro_carrinho,
         MainElementsAppbar,
 ):
      
@@ -17,6 +18,7 @@ class MainWindow:
         self.profileSelection =  ProfileSelection
         self.settings = Settings
         self.cadastro = cadastro
+        self.cadastro_carrinho = cadastro_carrinho
         self.elementsTheAppbar = MainElementsAppbar
 
     

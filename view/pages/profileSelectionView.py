@@ -2,19 +2,38 @@ import flet as ft
 import time
 
 class ProfileSelectionView:
-    def __init__(self, system ):
+    def __init__(self, system):
         self.system = system
-        self.on_profile_selected = self.system.view.page.home
-        self.ft = self.system.ft
+        self.page = system.page
+        self.on_profile_selected = None  # Será definido conforme necessário
+        self.db_client = system.model.database if hasattr(system.model, 'database') else None
+
+    def _load_carrinhos(self) -> list:
+        """Carrega os carrinhos/dispositivos do usuário logado do banco de dados."""
+        if not self.db_client or not self.system:
+            return []
+        try:
+            # Obtém o ID do usuário logado
+            id_usuario = self.system.obter_id_usuario()
+            if not id_usuario:
+                print("Nenhum usuário logado")
+                return []
+            
+            # Carrega os carrinhos do usuário
+            carrinhos = self.db_client.listar_carrinhos_usuario(id_usuario)
+            return carrinhos or []
+        except Exception as e:
+            print(f"Erro ao carregar carrinhos: {e}")
+            return []
 
     def render(self):
-        self.system.page.clean()
-        self.system.page.padding = 0
+        self.page.clean()
+        self.page.padding = 0
 
         # Fundo global da tela (Gradiente Escuro Roxo/Azul estilo HBO)
-        fundo_gradiente =self.ft.RadialGradient(
+        fundo_gradiente = ft.RadialGradient(
             colors=["#2A0A4A", "#050011"], 
-            center=self.system.ft.alignment.top_center, 
+            center=ft.alignment.top_center, 
             radius=1.5
         )
 
@@ -22,51 +41,68 @@ class ProfileSelectionView:
 
         def build_selection_view():
             """Constrói a tela inicial com as bolhas dos perfis."""
-            titulo =self.ft.Text("Quem está monitorando?", size=40, weight=self.system.ft.FontWeight.W_300, color=self.system.ft.Colors.WHITE)
+            titulo = ft.Text("Quem está monitorando?", size=40, weight=ft.FontWeight.W_300, color=ft.Colors.WHITE)
+
+            # Botão de Logout
+            def handle_logout(e):
+                self.system.limpar_usuario()
+                self.system.view.page.login(self.system).render()
+
+            btn_logout = ft.Container(
+                content=ft.IconButton(
+                    icon=ft.Icons.LOGOUT,
+                    icon_color=ft.Colors.RED_400,
+                    icon_size=24,
+                    tooltip="Logout",
+                    on_click=handle_logout
+                ),
+                alignment=ft.alignment.top_left,
+                padding=ft.padding.only(top=20, left=40)
+            )
 
             # Botão de Engrenagem (Configurações Globais) no topo
-            btn_engrenagem =self.ft.Container(
-                content=self.system.ft.IconButton(
-                    icon=self.system.ft.Icons.SETTINGS,
-                    icon_color=self.system.ft.Colors.GREY_400,
+            btn_engrenagem = ft.Container(
+                content=ft.IconButton(
+                    icon=ft.Icons.SETTINGS,
+                    icon_color=ft.Colors.GREY_400,
                     icon_size=28,
                     tooltip="Configurações Globais",
                     on_click=lambda e: trocar_tela(build_global_settings_view())
                 ),
-                alignment=self.system.ft.alignment.top_right,
-                padding=self.system.ft.padding.only(top=20, right=40)
+                alignment=ft.alignment.top_right,
+                padding=ft.padding.only(top=20, right=40)
             )
 
             def criar_bolha_perfil(nome, gradiente_colors, is_add_button=False):
                 letra_inicial = nome[0].upper() if not is_add_button else "+"
                 
                 # Círculo central (Preto) que vai por cima do gradiente para dar efeito de borda
-                circulo_interno =self.ft.Container(
+                circulo_interno = ft.Container(
                     width=132, height=132,
-                    shape=self.system.ft.BoxShape.CIRCLE,
+                    shape=ft.BoxShape.CIRCLE,
                     bgcolor="#050011",
-                    content=self.system.ft.Text(letra_inicial, size=50, weight=self.system.ft.FontWeight.W_200, color=self.system.ft.Colors.WHITE),
-                    alignment=self.system.ft.alignment.center,
+                    content=ft.Text(letra_inicial, size=50, weight=ft.FontWeight.W_200, color=ft.Colors.WHITE),
+                    alignment=ft.alignment.center,
                 )
 
                 # Círculo externo (Gradiente)
-                circulo_externo =self.ft.Container(
+                circulo_externo = ft.Container(
                     width=140, height=140,
-                    shape=self.system.ft.BoxShape.CIRCLE,
-                    gradient=self.system.ft.LinearGradient(
-                        begin=self.system.ft.alignment.top_left, end=self.system.ft.alignment.bottom_right,
+                    shape=ft.BoxShape.CIRCLE,
+                    gradient=ft.LinearGradient(
+                        begin=ft.alignment.top_left, end=ft.alignment.bottom_right,
                         colors=gradiente_colors
                     ) if not is_add_button else None,
-                    border=self.system.ft.border.all(2,self.ft.Colors.GREY_700) if is_add_button else None,
+                    border=ft.border.all(2, ft.Colors.GREY_700) if is_add_button else None,
                     content=circulo_interno,
-                    alignment=self.system.ft.alignment.center,
-                    animate_scale=self.system.ft.Animation(200,self.ft.AnimationCurve.DECELERATE),
+                    alignment=ft.alignment.center,
+                    animate_scale=ft.Animation(200, ft.AnimationCurve.DECELERATE),
                 )
 
-                nome_texto =self.ft.Text(nome, size=16, color=self.system.ft.Colors.GREY_400, weight=self.system.ft.FontWeight.W_400)
+                nome_texto = ft.Text(nome, size=16, color=ft.Colors.GREY_400, weight=ft.FontWeight.W_400)
 
-                lapis_icon =self.ft.IconButton(
-                    icon=self.system.ft.Icons.EDIT, icon_color=self.system.ft.Colors.GREY_600, icon_size=16,
+                lapis_icon = ft.IconButton(
+                    icon=ft.Icons.EDIT, icon_color=ft.Colors.GREY_600, icon_size=16,
                     on_click=lambda e: trocar_tela(build_edit_view(nome, gradiente_colors)),
                     visible=not is_add_button
                 )
@@ -74,184 +110,212 @@ class ProfileSelectionView:
                 def on_hover(e):
                     if e.data == "true":
                         circulo_externo.scale = 1.1
-                        nome_texto.color =self.ft.Colors.WHITE
+                        nome_texto.color = ft.Colors.WHITE
                     else:
                         circulo_externo.scale = 1.0
-                        nome_texto.color =self.ft.Colors.GREY_400
+                        nome_texto.color = ft.Colors.GREY_400
                     circulo_externo.update()
                     nome_texto.update()
 
                 def on_click_action(e):
                     if is_add_button:
-                        trocar_tela(build_edit_view("Novo Perfil", ["#4364F7", "#6FB1FC"]))
+                        # Redireciona para a tela de cadastro de novo carrinho
+                        self.system.view.page.cadastro_carrinho(self.system).render()
                     else:
-                        self.on_profile_selected(self.system).render()
+                        # Redireciona para a home com o carrinho selecionado
+                        self.system.view.page.home(self.system).render()
 
-                return self.ft.Container(
-                    content=self.system.ft.Column(
+                return ft.Container(
+                    content=ft.Column(
                         [
                             circulo_externo,
-                           self.ft.Container(height=10),
-                           self.ft.Row([nome_texto, lapis_icon], alignment=self.system.ft.MainAxisAlignment.CENTER, spacing=0)
+                            ft.Container(height=10),
+                            ft.Row([nome_texto, lapis_icon], alignment=ft.MainAxisAlignment.CENTER, spacing=0)
                         ],
-                        horizontal_alignment=self.system.ft.CrossAxisAlignment.CENTER, spacing=0
+                        horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=0
                     ),
                     on_hover=on_hover, on_click=on_click_action
                 )
 
-            grid_perfis =self.ft.Row(
-                [
-                    criar_bolha_perfil("Maquinhos", ["#FF007F", "#7F00FF"]), 
-                    criar_bolha_perfil("Rodinha", ["#0052D4", "#6FB1FC"]),   
-                    criar_bolha_perfil("Adicionar", [], is_add_button=True)
-                ],
-                alignment=self.system.ft.MainAxisAlignment.CENTER, spacing=50
+            grid_perfis = ft.Row(
+                [],  # Será preenchido dinamicamente
+                alignment=ft.MainAxisAlignment.CENTER, spacing=50
             )
 
-            return self.ft.Column(
+            # Carrega os carrinhos e preenche a grid
+            carrinhos = self._load_carrinhos()
+            cores_padrao = [
+                ["#FF007F", "#7F00FF"],
+                ["#0052D4", "#6FB1FC"],
+                ["#FF6B6B", "#FF8C42"],
+                ["#4ECDC4", "#44A08D"],
+                ["#9B59B6", "#8E44AD"],
+            ]
+            
+            # Criar bolhas para cada carrinho
+            bolhas_carrinhos = []
+            for idx, carrinho in enumerate(carrinhos):
+                nome = carrinho.get('nomes_dispositivos', f'Carrinho {idx + 1}')
+                cores = cores_padrao[idx % len(cores_padrao)]
+                bolhas_carrinhos.append(criar_bolha_perfil(nome, cores))
+            
+            # Adicionar botão de adicionar novo perfil
+            bolhas_carrinhos.append(criar_bolha_perfil("Adicionar", [], is_add_button=True))
+            
+            # Preencher a grid com as bolhas
+            grid_perfis.controls = bolhas_carrinhos
+
+            # Topbar com botões de logout e configurações
+            topbar = ft.Row(
+                [btn_logout, ft.Container(expand=True), btn_engrenagem],
+                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                expand=False
+            )
+
+            return ft.Column(
                 [
-                    btn_engrenagem,
-                   self.ft.Container(height=40),
+                    topbar,
+                    ft.Container(height=40),
                     titulo,
-                   self.ft.Container(height=60),
+                    ft.Container(height=60),
                     grid_perfis,
                 ],
-                horizontal_alignment=self.system.ft.CrossAxisAlignment.CENTER, expand=True
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER, expand=True
             )
 
         def build_global_settings_view():
             """Constrói a tela de Configurações Globais (Rede e Tema)."""
-            titulo =self.ft.Text("Configurações Globais", size=36, weight=self.system.ft.FontWeight.W_300, color=self.system.ft.Colors.WHITE)
+            titulo = ft.Text("Configurações Globais", size=36, weight=ft.FontWeight.W_300, color=ft.Colors.WHITE)
 
             # Lado Esquerdo (Ícone de Rede brilhante)
-            icone_rede =self.ft.Container(
-                width=160, height=160, shape=self.system.ft.BoxShape.CIRCLE,
-                gradient=self.system.ft.LinearGradient(colors=["#0052D4", "#7F00FF"]),
-                content=self.system.ft.Container(
-                    width=150, height=150, shape=self.system.ft.BoxShape.CIRCLE, bgcolor="#050011",
-                    content=self.system.ft.Icon(self.system.ft.Icons.ROUTER, size=70, color=self.system.ft.Colors.GREY_400),
-                    alignment=self.system.ft.alignment.center
+            icone_rede = ft.Container(
+                width=160, height=160, shape=ft.BoxShape.CIRCLE,
+                gradient=ft.LinearGradient(colors=["#0052D4", "#7F00FF"]),
+                content=ft.Container(
+                    width=150, height=150, shape=ft.BoxShape.CIRCLE, bgcolor="#050011",
+                    content=ft.Icon(ft.Icons.ROUTER, size=70, color=ft.Colors.GREY_400),
+                    alignment=ft.alignment.center
                 ),
-                alignment=self.system.ft.alignment.center
+                alignment=ft.alignment.center
             )
 
-            caixa_info =self.ft.Container(
-                content=self.system.ft.Text("Estas configurações\nserão aplicadas como\npadrão para os robôs.", text_align=self.system.ft.TextAlign.CENTER, size=12, color=self.system.ft.Colors.GREY_400),
+            caixa_info = ft.Container(
+                content=ft.Text("Estas configurações\nserão aplicadas como\npadrão para os robôs.", text_align=ft.TextAlign.CENTER, size=12, color=ft.Colors.GREY_400),
                 padding=20, bgcolor="#151125", border_radius=15, width=180
             )
 
-            col_esquerda =self.ft.Column([icone_rede,self.ft.Container(height=20), caixa_info], horizontal_alignment=self.system.ft.CrossAxisAlignment.CENTER)
+            col_esquerda = ft.Column([icone_rede, ft.Container(height=20), caixa_info], horizontal_alignment=ft.CrossAxisAlignment.CENTER)
 
             # Lado Direito (Formulário)
-            input_rede =self.ft.TextField(
+            input_rede = ft.TextField(
                 label="Nome da Rede Wi-Fi (SSID)", 
-                width=350, border=self.system.ft.InputBorder.UNDERLINE, color=self.system.ft.Colors.WHITE, bgcolor=self.system.ft.Colors.TRANSPARENT,
-                prefix_icon=self.system.ft.Icons.WIFI
+                width=350, border=ft.InputBorder.UNDERLINE, color=ft.Colors.WHITE, bgcolor=ft.Colors.TRANSPARENT,
+                prefix_icon=ft.Icons.WIFI
             )
 
-            input_senha =self.ft.TextField(
+            input_senha = ft.TextField(
                 label="Senha da Rede", 
-                width=350, border=self.system.ft.InputBorder.UNDERLINE, color=self.system.ft.Colors.WHITE, bgcolor=self.system.ft.Colors.TRANSPARENT,
-                password=True, can_reveal_password=True, prefix_icon=self.system.ft.Icons.LOCK_OUTLINE
+                width=350, border=ft.InputBorder.UNDERLINE, color=ft.Colors.WHITE, bgcolor=ft.Colors.TRANSPARENT,
+                password=True, can_reveal_password=True, prefix_icon=ft.Icons.LOCK_OUTLINE
             )
 
             # Seletor de Tema
-            texto_tema =self.ft.Text("Tema Básico do App", color=self.system.ft.Colors.GREY_400, size=14)
+            texto_tema = ft.Text("Tema Básico do App", color=ft.Colors.GREY_400, size=14)
             
             def criar_botao_tema(nome, icone, cor_ativa):
-                return self.ft.Container(
-                    content=self.system.ft.Row([self.system.ft.Icon(icone, size=18, color=self.system.ft.Colors.WHITE),self.ft.Text(nome, color=self.system.ft.Colors.WHITE)]),
-                    padding=self.system.ft.padding.symmetric(horizontal=20, vertical=10),
+                return ft.Container(
+                    content=ft.Row([ft.Icon(icone, size=18, color=ft.Colors.WHITE), ft.Text(nome, color=ft.Colors.WHITE)]),
+                    padding=ft.padding.symmetric(horizontal=20, vertical=10),
                     border_radius=20,
                     bgcolor=cor_ativa,
                     ink=True,
                     on_click=lambda e: print(f"Tema {nome} selecionado!")
                 )
 
-            paleta_temas =self.ft.Row([
-                criar_botao_tema("Escuro",self.ft.Icons.DARK_MODE, "#2A2A35"), # Tema ativo (exemplo)
-                criar_botao_tema("Claro",self.ft.Icons.LIGHT_MODE,self.ft.Colors.TRANSPARENT)
+            paleta_temas = ft.Row([
+                criar_botao_tema("Escuro", ft.Icons.DARK_MODE, "#2A2A35"), # Tema ativo (exemplo)
+                criar_botao_tema("Claro", ft.Icons.LIGHT_MODE, ft.Colors.TRANSPARENT)
             ], spacing=15)
 
-            col_direita =self.ft.Column(
+            col_direita = ft.Column(
                 [
-                   self.ft.Container(height=20), 
+                    ft.Container(height=20), 
                     input_rede, 
-                   self.ft.Container(height=20), 
+                    ft.Container(height=20), 
                     input_senha, 
-                   self.ft.Container(height=30), 
+                    ft.Container(height=30), 
                     texto_tema,
-                   self.ft.Container(height=5),
+                    ft.Container(height=5),
                     paleta_temas
                 ], 
-                horizontal_alignment=self.system.ft.CrossAxisAlignment.START
+                horizontal_alignment=ft.CrossAxisAlignment.START
             )
 
             # Botões inferiores
-            btn_salvar =self.ft.Container(
-                content=self.system.ft.Text("SALVAR", weight=self.system.ft.FontWeight.BOLD, color=self.system.ft.Colors.WHITE),
-                alignment=self.system.ft.alignment.center, width=150, height=45, border_radius=25, ink=True,
-                gradient=self.system.ft.LinearGradient(colors=["#7F00FF", "#0052D4"]),
+            btn_salvar = ft.Container(
+                content=ft.Text("SALVAR", weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
+                alignment=ft.alignment.center, width=150, height=45, border_radius=25, ink=True,
+                gradient=ft.LinearGradient(colors=["#7F00FF", "#0052D4"]),
                 on_click=lambda e: trocar_tela(build_selection_view()) 
             )
 
-            btn_cancelar =self.ft.Container(
-                content=self.system.ft.Text("CANCELAR", weight=self.system.ft.FontWeight.BOLD, color=self.system.ft.Colors.GREY_300),
-                alignment=self.system.ft.alignment.center, width=150, height=45, border_radius=25, bgcolor="#2A2A35", ink=True,
+            btn_cancelar = ft.Container(
+                content=ft.Text("CANCELAR", weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_300),
+                alignment=ft.alignment.center, width=150, height=45, border_radius=25, bgcolor="#2A2A35", ink=True,
                 on_click=lambda e: trocar_tela(build_selection_view()) 
             )
 
-            botoes_acao =self.ft.Row([btn_salvar, btn_cancelar], alignment=self.system.ft.MainAxisAlignment.CENTER, spacing=20)
+            botoes_acao = ft.Row([btn_salvar, btn_cancelar], alignment=ft.MainAxisAlignment.CENTER, spacing=20)
 
-            return self.ft.Column(
+            return ft.Column(
                 [
-                   self.ft.Container(height=60),
+                    ft.Container(height=60),
                     titulo,
-                   self.ft.Container(height=50),
-                   self.ft.Row([col_esquerda,self.ft.Container(width=50), col_direita], alignment=self.system.ft.MainAxisAlignment.CENTER, vertical_alignment=self.system.ft.CrossAxisAlignment.START),
-                   self.ft.Container(height=60),
+                    ft.Container(height=50),
+                    ft.Row([col_esquerda, ft.Container(width=50), col_direita], alignment=ft.MainAxisAlignment.CENTER, vertical_alignment=ft.CrossAxisAlignment.START),
+                    ft.Container(height=60),
                     botoes_acao
                 ],
-                horizontal_alignment=self.system.ft.CrossAxisAlignment.CENTER, expand=True
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER, expand=True
             )
 
         def build_edit_view(nome_atual, cor_atual):
             """Constrói a tela de criar/editar perfil."""
-            titulo =self.ft.Text("Criar perfil" if nome_atual == "Novo Perfil" else "Editar perfil", size=36, weight=self.system.ft.FontWeight.W_300, color=self.system.ft.Colors.WHITE)
+            titulo = ft.Text("Criar perfil" if nome_atual == "Novo Perfil" else "Editar perfil", size=36, weight=ft.FontWeight.W_300, color=ft.Colors.WHITE)
 
             # Lado Esquerdo (Avatar)
-            avatar_preview =self.ft.Container(
-                width=160, height=160, shape=self.system.ft.BoxShape.CIRCLE,
-                gradient=self.system.ft.LinearGradient(colors=cor_atual),
-                content=self.system.ft.Container(
-                    width=150, height=150, shape=self.system.ft.BoxShape.CIRCLE, bgcolor="#050011",
-                    content=self.system.ft.Icon(self.system.ft.Icons.PERSON_OUTLINE, size=80, color=self.system.ft.Colors.GREY_400),
-                    alignment=self.system.ft.alignment.center
+            avatar_preview = ft.Container(
+                width=160, height=160, shape=ft.BoxShape.CIRCLE,
+                gradient=ft.LinearGradient(colors=cor_atual),
+                content=ft.Container(
+                    width=150, height=150, shape=ft.BoxShape.CIRCLE, bgcolor="#050011",
+                    content=ft.Icon(ft.Icons.PERSON_OUTLINE, size=80, color=ft.Colors.GREY_400),
+                    alignment=ft.alignment.center
                 ),
-                alignment=self.system.ft.alignment.center
+                alignment=ft.alignment.center
             )
 
-            caixa_foto =self.ft.Container(
-                content=self.system.ft.Text("Use o aplicativo para\ncarregar uma foto ou\nescolher um avatar.", text_align=self.system.ft.TextAlign.CENTER, size=12, color=self.system.ft.Colors.GREY_400),
+            caixa_foto = ft.Container(
+                content=ft.Text("Use o aplicativo para\ncarregar uma foto ou\nescolher um avatar.", text_align=ft.TextAlign.CENTER, size=12, color=ft.Colors.GREY_400),
                 padding=20, bgcolor="#151125", border_radius=15, width=180
             )
 
-            col_esquerda =self.ft.Column([avatar_preview,self.ft.Container(height=20), caixa_foto], horizontal_alignment=self.system.ft.CrossAxisAlignment.CENTER)
+            col_esquerda = ft.Column([avatar_preview, ft.Container(height=20), caixa_foto], horizontal_alignment=ft.CrossAxisAlignment.CENTER)
 
             # Lado Direito (Formulário)
-            input_nome =self.ft.TextField(
+            input_nome = ft.TextField(
                 label="Nome", value="" if nome_atual == "Novo Perfil" else nome_atual,
-                width=350, border=self.system.ft.InputBorder.UNDERLINE, color=self.system.ft.Colors.WHITE, bgcolor=self.system.ft.Colors.TRANSPARENT
+                width=350, border=ft.InputBorder.UNDERLINE, color=ft.Colors.WHITE, bgcolor=ft.Colors.TRANSPARENT
             )
 
             def criar_bolinha_cor(cores):
-                return self.ft.Container(
-                    width=40, height=40, shape=self.system.ft.BoxShape.CIRCLE,
-                    gradient=self.system.ft.LinearGradient(colors=cores), ink=True,
+                return ft.Container(
+                    width=40, height=40, shape=ft.BoxShape.CIRCLE,
+                    gradient=ft.LinearGradient(colors=cores), ink=True,
                     on_click=lambda e: print(f"Cor selecionada!") 
                 )
 
-            paleta_cores =self.ft.Row([
+            paleta_cores = ft.Row([
                 criar_bolinha_cor(["#FF007F", "#FF007F"]), 
                 criar_bolinha_cor(["#FF007F", "#7F00FF"]), 
                 criar_bolinha_cor(["#7F00FF", "#7F00FF"]), 
@@ -259,39 +323,39 @@ class ProfileSelectionView:
                 criar_bolinha_cor(["#0052D4", "#6FB1FC"]), 
             ], spacing=15)
 
-            col_direita =self.ft.Column([self.system.ft.Container(height=40), input_nome,self.ft.Container(height=40), paleta_cores], horizontal_alignment=self.system.ft.CrossAxisAlignment.START)
+            col_direita = ft.Column([ft.Container(height=40), input_nome, ft.Container(height=40), paleta_cores], horizontal_alignment=ft.CrossAxisAlignment.START)
 
             # Botões inferiores
-            btn_salvar =self.ft.Container(
-                content=self.system.ft.Text("SALVAR", weight=self.system.ft.FontWeight.BOLD, color=self.system.ft.Colors.WHITE),
-                alignment=self.system.ft.alignment.center, width=150, height=45, border_radius=25, ink=True,
-                gradient=self.system.ft.LinearGradient(colors=["#7F00FF", "#0052D4"]),
+            btn_salvar = ft.Container(
+                content=ft.Text("SALVAR", weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
+                alignment=ft.alignment.center, width=150, height=45, border_radius=25, ink=True,
+                gradient=ft.LinearGradient(colors=["#7F00FF", "#0052D4"]),
                 on_click=lambda e: trocar_tela(build_selection_view()) 
             )
 
-            btn_cancelar =self.ft.Container(
-                content=self.system.ft.Text("CANCELAR", weight=self.system.ft.FontWeight.BOLD, color=self.system.ft.Colors.GREY_300),
-                alignment=self.system.ft.alignment.center, width=150, height=45, border_radius=25, bgcolor="#2A2A35", ink=True,
+            btn_cancelar = ft.Container(
+                content=ft.Text("CANCELAR", weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_300),
+                alignment=ft.alignment.center, width=150, height=45, border_radius=25, bgcolor="#2A2A35", ink=True,
                 on_click=lambda e: trocar_tela(build_selection_view()) 
             )
 
-            botoes_acao =self.ft.Row([btn_salvar, btn_cancelar], alignment=self.system.ft.MainAxisAlignment.CENTER, spacing=20)
+            botoes_acao = ft.Row([btn_salvar, btn_cancelar], alignment=ft.MainAxisAlignment.CENTER, spacing=20)
 
-            return self.ft.Column(
+            return ft.Column(
                 [
-                   self.ft.Container(height=60),
+                    ft.Container(height=60),
                     titulo,
-                   self.ft.Container(height=50),
-                   self.ft.Row([col_esquerda,self.ft.Container(width=50), col_direita], alignment=self.system.ft.MainAxisAlignment.CENTER, vertical_alignment=self.system.ft.CrossAxisAlignment.START),
-                   self.ft.Container(height=60),
+                    ft.Container(height=50),
+                    ft.Row([col_esquerda, ft.Container(width=50), col_direita], alignment=ft.MainAxisAlignment.CENTER, vertical_alignment=ft.CrossAxisAlignment.START),
+                    ft.Container(height=60),
                     botoes_acao
                 ],
-                horizontal_alignment=self.system.ft.CrossAxisAlignment.CENTER, expand=True
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER, expand=True
             )
 
         # --- GERENCIADOR DE ESTADO (TROCA DE TELAS) ---
 
-        self.main_content =self.ft.Container(
+        self.main_content = ft.Container(
             content=build_selection_view(), 
             expand=True,
             gradient=fundo_gradiente,
@@ -307,7 +371,7 @@ class ProfileSelectionView:
             self.main_content.opacity = 1
             self.main_content.update()
 
-        self.system.page.add(self.main_content)
+        self.page.add(self.main_content)
         
         # Disparo da Animação Inicial
         time.sleep(0.1)

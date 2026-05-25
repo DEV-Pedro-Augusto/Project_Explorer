@@ -17,7 +17,7 @@ class LoginView:
             self.system.page.update()
 
         def forgot_password_click(e):
-            dlg = ft.AlertDialog(
+            dlg = self.ft.AlertDialog(
                 title=self.ft.Text("Recuperar Senha", weight=self.ft.FontWeight.BOLD),
                 content=self.ft.Text("As instruções de recuperação serão enviadas para o seu e-mail cadastrado."),
                 actions=[
@@ -31,6 +31,49 @@ class LoginView:
 
         def register_click(e):
            self.system.view.page.cadastro(self.system).render()
+
+        def handle_login(e):
+            """Valida o login e autentica o usuário."""
+            email = input_user.value
+            senha = input_senha.value
+            
+            # Validação básica
+            if not email or not senha:
+                dlg = self.ft.AlertDialog(
+                    title=self.ft.Text("Atenção", weight=self.ft.FontWeight.BOLD),
+                    content=self.ft.Text("Por favor, preencha todos os campos."),
+                    actions=[
+                        self.ft.TextButton("OK", on_click=lambda e: fechar_popup(dlg))
+                    ],
+                    shape=self.ft.RoundedRectangleBorder(radius=15),
+                )
+                self.system.page.dialog = dlg
+                dlg.open = True
+                self.system.page.update()
+                return
+            
+            # Tenta autenticar no banco de dados
+            usuario = self.system.model.database.autenticar_usuario(email, senha)
+            
+            if usuario:
+                # Armazena o usuário no sistema
+                self.system.definir_usuario(usuario)
+                # Redireciona para seleção de perfil
+                self.on_login_success(self.system).render()
+            else:
+                # Mostra erro de autenticação
+                dlg = self.ft.AlertDialog(
+                    title=self.ft.Text("Login Inválido", weight=self.ft.FontWeight.BOLD, color=self.ft.Colors.RED_400),
+                    content=self.ft.Text("E-mail ou senha incorretos. Tente novamente."),
+                    actions=[
+                        self.ft.TextButton("OK", on_click=lambda e: fechar_popup(dlg))
+                    ],
+                    shape=self.ft.RoundedRectangleBorder(radius=15),
+                    bgcolor="#15171E"
+                )
+                self.system.page.dialog = dlg
+                dlg.open = True
+                self.system.page.update()
 
         # --- CONSTRUÇÃO DA UI (LADO ESQUERDO) ---
 
@@ -77,7 +120,7 @@ class LoginView:
             height=50,
             border_radius=25, # Botão mais arredondado
             ink=True, # Efeito de clique
-            on_click=lambda e: (self.on_login_success(self.system).render()),
+            on_click=handle_login,
             gradient=self.ft.LinearGradient(
                 begin=self.ft.alignment.center_left,
                 end=self.ft.alignment.center_right,
