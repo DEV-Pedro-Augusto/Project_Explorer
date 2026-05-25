@@ -82,7 +82,7 @@ class SettingsView:
                     self.ft.ListTile(
                         leading=self.ft.Icon(self.ft.Icons.LOGOUT, color=self.ft.Colors.RED_400),
                         title=self.ft.Text("Sair da Conta", color=self.ft.Colors.RED_400),
-                        # on_click=lambda e: print("Deslogar") # Exemplo de ação
+                        on_click=lambda e: self.system.view.page.profileSelection(self.system).render()
                     ),
                 ]),
                 bgcolor="#111827",
