@@ -1,4 +1,6 @@
 class MainView:
-    def __init__(self,MainWindow,MainAnimate):
+    def __init__(self,MainWindow,MainWidget,MainAnimate):
         self.page = MainWindow
-        self.animate = MainAnimate        
+        self.widget = MainWidget
+        self.animate = MainAnimate 
+               

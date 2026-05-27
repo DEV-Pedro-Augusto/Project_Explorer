@@ -1,5 +1,3 @@
-
-
 class ProfileSelectionView:
     def __init__(self, system):
         self.system = system
@@ -10,7 +8,7 @@ class ProfileSelectionView:
         self.system.page.clean()
         self.system.page.padding = 0
 
-        # Fundo global da tela (Gradiente Escuro Roxo/Azul estilo HBO)
+        # Fundo global da tela (Gradiente Escuro Roxo/Azul)
         fundo_gradiente = self.ft.RadialGradient(
             colors=["#2A0A4A", "#050011"], 
             center=self.ft.alignment.top_center, 
@@ -19,7 +17,12 @@ class ProfileSelectionView:
 
         def voltar_para_selecao():
             """Função de callback passada para as outras views retornarem ao menu."""
-            trocar_tela(build_selection_view())
+            # Corrigido: Usando animar_widget e passando (system, container, view)
+            self.system.view.animate.animacaoPagina.animar_widget(
+                self.system, 
+                self.main_content, 
+                build_selection_view()
+            )
 
         # --- CONSTRUTOR DA TELA INICIAL (BOLHAS) ---
         def build_selection_view():
@@ -32,8 +35,12 @@ class ProfileSelectionView:
                     icon_color=self.ft.Colors.GREY_400,
                     icon_size=28,
                     tooltip="Configurações Globais",
-                    # Instancia a classe separada de Configurações
-                    on_click=lambda e: trocar_tela(GlobalSettingsView(self.system, voltar_para_selecao).build())
+                    # Corrigido: Abre as Configurações separadas usando o animar_widget
+                    on_click=lambda e: self.system.view.animate.animacaoPagina.animar_widget(
+                        self.system,
+                        self.main_content, 
+                        self.system.view.widget.globalSettings(self.system, voltar_para_selecao).build()
+                    )
                 ),
                 alignment=self.ft.alignment.top_right,
                 padding=self.ft.padding.only(top=20, right=40)
@@ -63,8 +70,12 @@ class ProfileSelectionView:
 
                 lapis_icon = self.ft.IconButton(
                     icon=self.ft.Icons.EDIT, icon_color=self.ft.Colors.GREY_600, icon_size=16,
-                    # Instancia a classe separada de Edição
-                    on_click=lambda e: trocar_tela(ProfileEditView(self.system, nome, gradiente_colors, voltar_para_selecao).build()),
+                    # Corrigido: Abre a Edição de Perfil separada usando o animar_widget
+                    on_click=lambda e, n=nome, c=gradiente_colors: self.system.view.animate.animacaoPagina.animar_widget(
+                        self.system,
+                        self.main_content, 
+                        self.system.view.widget.profileEdit(self.system, n, c, voltar_para_selecao).build()
+                    ),
                     visible=not is_add_button
                 )
 
@@ -80,10 +91,15 @@ class ProfileSelectionView:
 
                 def on_click_action(e):
                     if is_add_button:
-                        # Instancia a classe separada para Novo Perfil
-                        trocar_tela(ProfileEditView(self.system, "Novo Perfil", ["#4364F7", "#6FB1FC"], voltar_para_selecao).build())
+                        # Corrigido: Abre a Criação de Novo Perfil separada usando o animar_widget
+                        self.system.view.animate.animacaoPagina.animar_widget(
+                            self.system,
+                            self.main_content, 
+                            self.system.view.widget.profileEdit(self.system, "Novo Perfil", ["#4364F7", "#6FB1FC"], voltar_para_selecao).build()
+                        )
                     else:
-                        self.on_profile_selected(self.system).render()
+                        # Corrigido: Navega para a HomeView usando a animação de Tela Inteira
+                        self.system.view.animate.animacaoPagina.animar_tela(self.system, self.on_profile_selected)
 
                 return self.ft.Container(
                     content=self.ft.Column(
@@ -125,14 +141,6 @@ class ProfileSelectionView:
             opacity=0,
             animate_opacity=800,
         )
-
-        def trocar_tela(nova_view):
-            self.main_content.opacity = 0
-            self.main_content.update()
-            time.sleep(0.3)
-            self.main_content.content = nova_view
-            self.main_content.opacity = 1
-            self.main_content.update()
 
         self.system.page.add(self.main_content)
         

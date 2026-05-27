@@ -1,4 +1,4 @@
-class GlobalSettingsView:
+class GlobalSettingsWidget:
     def __init__(self, system, on_back):
         self.system = system
         self.ft = system.ft

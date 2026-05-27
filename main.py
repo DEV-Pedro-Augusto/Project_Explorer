@@ -23,12 +23,15 @@ from view.pages.elementstheappbar.calendar import CalendarView
 from view.animations.buttonAnimation import AnimationButton
 from view.animations.pageAnimation import AnimationPage
 
-   
+    # Widgets
+from view.widgets.globalsettingsWidget import GlobalSettingsWidget
+from view.widgets.profileeditWidget import ProfileEditWidget
 
     # Routes
 from view.mainView import MainView
 from view.pages.mainWindow import MainWindow
 from view.pages.elementstheappbar.mainElementsTheAppbar import MainElementsAppbar
+from view.widgets.mainWidget import MainWidget
 from view.animations.mainAnimation import MainAnimate
 
 
@@ -104,7 +107,11 @@ def main(page: ft.Page):
                     InventoryView
                 ),
             ),
-            
+            MainWidget(
+                GlobalSettingsWidget,
+                ProfileEditWidget
+
+            ),
             MainAnimate(
                 AnimationButton,
                 AnimationPage

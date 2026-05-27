@@ -1,4 +1,4 @@
-class ProfileEditView:
+class ProfileEditWidget:
     def __init__(self, system, nome_atual, cor_atual, on_back):
         self.system = system
         self.ft = system.ft
