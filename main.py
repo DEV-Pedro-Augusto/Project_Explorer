@@ -162,6 +162,7 @@ if __name__ == "__main__":
         try:
             resposta = db_wrapper.client.table("dispositivos").select("nomes_dispositivos").execute()
             print(f"Robô encontrado: {resposta.data}")
+            db_wrapper.listar_leituras()
             db_wrapper.listar_itens()
             db_wrapper.listar_logins()
             db_wrapper.listar_sensores()

@@ -73,7 +73,7 @@ class ProfileSelectionView:
                 padding=ft.padding.only(top=20, right=40)
             )
 
-            def criar_bolha_perfil(nome, gradiente_colors, is_add_button=False):
+            def criar_bolha_perfil(nome, gradiente_colors, is_add_button=False, carrinho=None):
                 letra_inicial = nome[0].upper() if not is_add_button else "+"
                 
                 # Círculo central (Preto) que vai por cima do gradiente para dar efeito de borda
@@ -122,6 +122,12 @@ class ProfileSelectionView:
                         # Redireciona para a tela de cadastro de novo carrinho
                         self.system.view.page.cadastro_carrinho(self.system).render()
                     else:
+                        # Define o dispositivo selecionado no sistema para filtragem
+                        try:
+                            if carrinho and carrinho.get('id_dispositivos'):
+                                self.system.definir_dispositivo(carrinho.get('id_dispositivos'))
+                        except Exception as ex:
+                            print(f"Erro ao definir dispositivo: {ex}")
                         # Redireciona para a home com o carrinho selecionado
                         self.system.view.page.home(self.system).render()
 
@@ -157,10 +163,10 @@ class ProfileSelectionView:
             for idx, carrinho in enumerate(carrinhos):
                 nome = carrinho.get('nomes_dispositivos', f'Carrinho {idx + 1}')
                 cores = cores_padrao[idx % len(cores_padrao)]
-                bolhas_carrinhos.append(criar_bolha_perfil(nome, cores))
+                bolhas_carrinhos.append(criar_bolha_perfil(nome, cores, False, carrinho))
             
             # Adicionar botão de adicionar novo perfil
-            bolhas_carrinhos.append(criar_bolha_perfil("Adicionar", [], is_add_button=True))
+            bolhas_carrinhos.append(criar_bolha_perfil("Adicionar", [], is_add_button=True, carrinho=None))
             
             # Preencher a grid com as bolhas
             grid_perfis.controls = bolhas_carrinhos

@@ -14,6 +14,7 @@ class System:
         self.usuario_logado = None  # Será preenchido após autenticação
         self.id_usuario_logado = None  # ID do usuário para filtros
         self.nome_usuario_logado = None  # Nome do usuário para exibição
+        self.id_dispositivo_selecionado = None  # Dispositivo/carrinho atualmente selecionado
     
     def definir_usuario(self, usuario: dict):
         """Define o usuário como logado no sistema."""
@@ -39,4 +40,18 @@ class System:
         self.usuario_logado = None
         self.id_usuario_logado = None
         self.nome_usuario_logado = None
+        self.id_dispositivo_selecionado = None
         print("Usuário deslogado")
+
+    def definir_dispositivo(self, id_dispositivo: int):
+        """Define o dispositivo/carrinho atual para filtragem nas views."""
+        self.id_dispositivo_selecionado = id_dispositivo
+        print(f"Dispositivo selecionado: {id_dispositivo}")
+
+    def obter_id_dispositivo(self) -> int:
+        """Retorna o ID do dispositivo/carrinho selecionado."""
+        return self.id_dispositivo_selecionado
+
+    def limpar_dispositivo(self):
+        """Limpa o dispositivo selecionado."""
+        self.id_dispositivo_selecionado = None

@@ -44,6 +44,21 @@ class Database:
         except Exception as e:
             print(f"Erro ao carregar logins do banco: {e}")
             return []
+    
+    def listar_leituras(self) -> list:
+        """Retorna todas as leituras da tabela de leituras."""
+        if not self.client:  # Corrigido para minúsculo
+            return []
+
+        try:
+            resposta = self.client.table("leituras").select(
+                "id_leituras, id_sessoes_leituras, id_etiquetas_sensores, valores_lidos, data_hora"
+            ).execute()
+            print(f"Leituras listadas: {resposta.data}")
+            return resposta.data or []
+        except Exception as e:
+            print(f"Erro ao carregar leituras do banco: {e}")
+            return []
 
     def listar_itens(self) -> list:
         """Retorna todos os itens da tabela de dispositivos."""
@@ -219,8 +234,11 @@ class Database:
             print(f"Erro ao cadastrar carrinho: {e}")
             return None
 
-    def listar_sessoes_leituras(self, id_usuario: int = None) -> list:
-        """Retorna as sessões de leitura do usuário ou todas se não houver filtro."""
+    def listar_sessoes_leituras(self, id_usuario: int = None, id_dispositivo: int = None) -> list:
+        """Retorna as sessões de leitura filtradas por usuário e/ou dispositivo.
+
+        Se nenhum filtro for informado, retorna todas as sessões ordenadas por `datas_uploads` desc.
+        """
         if not self.client:
             return []
 
@@ -228,14 +246,16 @@ class Database:
             query = self.client.table("sessoes_leituras").select(
                 "id_sessoes_leituras, id_usuarios, id_dispositivos, datas_uploads, inicio_missao, fim_missao, descricao_livre"
             )
-            
-            # Se houver ID de usuário, filtra por ele
+
+            # Aplica filtros quando fornecidos
             if id_usuario:
                 query = query.eq("id_usuarios", id_usuario)
-            
+            if id_dispositivo:
+                query = query.eq("id_dispositivos", id_dispositivo)
+
             # Ordena por data de upload (mais recentes primeiro)
             resposta = query.order("datas_uploads", desc=True).execute()
-            
+
             print(f"Sessões de leitura listadas: {resposta.data}")
             return resposta.data or []
         except Exception as e:
