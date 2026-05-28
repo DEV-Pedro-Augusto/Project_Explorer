@@ -26,6 +26,7 @@ from view.animations.pageAnimation import AnimationPage
     # Widgets
 from view.widgets.globalsettingsWidget import GlobalSettingsWidget
 from view.widgets.profileeditWidget import ProfileEditWidget
+from view.widgets.loadingWidget import LoadingWidget
 
     # Routes
 from view.mainView import MainView
@@ -109,7 +110,8 @@ def main(page: ft.Page):
             ),
             MainWidget(
                 GlobalSettingsWidget,
-                ProfileEditWidget
+                ProfileEditWidget,
+                LoadingWidget
 
             ),
             MainAnimate(
