@@ -12,6 +12,7 @@ class CadastroView:
             self.system.view.animate.animacaoPagina.animar_tela(self.system, self.on_back_to_login)
 
         def handle_register(e):
+            # Lógica de cadastro virá aqui no futuro
             login_click(e) 
 
         # --- CONSTRUÇÃO DO CARTÃO GLASSMORPHISM ---
@@ -22,8 +23,8 @@ class CadastroView:
             margin=self.ft.margin.only(bottom=5)
         )
 
-        titulo = self.ft.Text("Create Account", size=26, weight=self.ft.FontWeight.BOLD, color=self.ft.Colors.WHITE, text_align=self.ft.TextAlign.CENTER)
-        subtitulo = self.ft.Text("Join us to start your journey", size=13, color=self.ft.Colors.WHITE70, text_align=self.ft.TextAlign.CENTER)
+        titulo = self.ft.Text("Criar Conta", size=26, weight=self.ft.FontWeight.BOLD, color=self.ft.Colors.WHITE, text_align=self.ft.TextAlign.CENTER)
+        subtitulo = self.ft.Text("Junte-se a nós para começar sua jornada", size=13, color=self.ft.Colors.WHITE70, text_align=self.ft.TextAlign.CENTER)
 
         estilo_input = {
             "width": 340,
@@ -36,21 +37,21 @@ class CadastroView:
             "text_size": 14
         }
 
-        input_nome = self.ft.TextField(hint_text="Full Name", prefix_icon=self.ft.Icons.BADGE, **estilo_input)
-        input_email = self.ft.TextField(hint_text="Email address", prefix_icon=self.ft.Icons.MAIL_OUTLINE, **estilo_input)
-        input_senha = self.ft.TextField(hint_text="Password", password=True, can_reveal_password=True, prefix_icon=self.ft.Icons.LOCK_OUTLINE, **estilo_input)
-        input_confirma_senha = self.ft.TextField(hint_text="Confirm Password", password=True, can_reveal_password=True, prefix_icon=self.ft.Icons.LOCK_RESET_OUTLINED, **estilo_input)
+        input_nome = self.ft.TextField(hint_text="Nome Completo", prefix_icon=self.ft.Icons.BADGE, **estilo_input)
+        input_email = self.ft.TextField(hint_text="Endereço de E-mail", prefix_icon=self.ft.Icons.MAIL_OUTLINE, **estilo_input)
+        input_senha = self.ft.TextField(hint_text="Senha", password=True, can_reveal_password=True, prefix_icon=self.ft.Icons.LOCK_OUTLINE, **estilo_input)
+        input_confirma_senha = self.ft.TextField(hint_text="Confirmar Senha", password=True, can_reveal_password=True, prefix_icon=self.ft.Icons.LOCK_RESET_OUTLINED, **estilo_input)
 
         btn_register = self.ft.Container(
-            content=self.ft.Row([self.ft.Text("Sign Up", size=15, weight=self.ft.FontWeight.BOLD, color=self.ft.Colors.WHITE), self.ft.Icon(self.ft.Icons.ARROW_FORWARD, color=self.ft.Colors.WHITE, size=18)], alignment=self.ft.MainAxisAlignment.CENTER),
+            content=self.ft.Row([self.ft.Text("Cadastrar", size=15, weight=self.ft.FontWeight.BOLD, color=self.ft.Colors.WHITE), self.ft.Icon(self.ft.Icons.ARROW_FORWARD, color=self.ft.Colors.WHITE, size=18)], alignment=self.ft.MainAxisAlignment.CENTER),
             alignment=self.ft.alignment.center, width=340, height=45, border_radius=10, ink=True, on_click=handle_register,
             bgcolor=self.ft.Colors.with_opacity(0.2, self.ft.Colors.WHITE),
             border=self.ft.border.all(1, self.ft.Colors.with_opacity(0.4, self.ft.Colors.WHITE)),
         )
 
         rodape = self.ft.Row([
-            self.ft.Text("Already have an account?", size=13, color=self.ft.Colors.WHITE70),
-            self.ft.TextButton("Sign In", on_click=login_click, style=self.ft.ButtonStyle(color=self.ft.Colors.CYAN_200))
+            self.ft.Text("Já tem uma conta?", size=13, color=self.ft.Colors.WHITE70),
+            self.ft.TextButton("Entrar", on_click=login_click, style=self.ft.ButtonStyle(color=self.ft.Colors.CYAN_200))
         ], alignment=self.ft.MainAxisAlignment.CENTER, spacing=0)
 
         # LARGURA (420) E ALTURA (600) FIXAS NO CARTÃO!

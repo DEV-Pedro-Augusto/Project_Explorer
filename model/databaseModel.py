@@ -1,14 +1,12 @@
-
-
 class Database:
     """Representa uma conexão com o banco de dados."""
 
-    def __init__(self,system):
+    def __init__(self, system):
         # Inicializa a conexão ao criar o objeto (usando minúsculo)
         self.system = system
         self.client = self.conectar_supabase()
 
-    @staticmethod
+    # ❌ REMOVIDO: @staticmethod
     def conectar_supabase(self):
         """Inicializa o cliente Supabase utilizando o contexto do system."""
         try:
@@ -37,7 +35,7 @@ class Database:
         
     def listar_logins(self) -> list:
         """Retorna todos os logins da tabela de usuários."""
-        if not self.client:  # Corrigido para minúsculo
+        if not self.client:
             return []
 
         try:
@@ -52,7 +50,7 @@ class Database:
     
     def listar_leituras(self) -> list:
         """Retorna todas as leituras da tabela de leituras."""
-        if not self.client:  # Corrigido para minúsculo
+        if not self.client:
             return []
 
         try:
@@ -67,7 +65,7 @@ class Database:
 
     def listar_itens(self) -> list:
         """Retorna todos os itens da tabela de dispositivos."""
-        if not self.client:  # Corrigido para minúsculo
+        if not self.client:
             return []
 
         try:
@@ -79,9 +77,10 @@ class Database:
         except Exception as e:
             print(f"Erro ao carregar itens do banco: {e}")
             return []
+
     def listar_sensores(self) -> list:
         """Retorna todos os sensores da tabela de sensores."""
-        if not self.client:  # Corrigido para minúsculo
+        if not self.client:
             return []
 
         try:
@@ -95,7 +94,7 @@ class Database:
 
     def exibir_catalogo_de_status(self):
         """Exibe no console os status cadastrados."""
-        if not self.client:  # Corrigido para minúsculo
+        if not self.client:
             return
 
         resposta = self.client.table("status_dispositivos").select("nomes_status_dispositivos").execute()
@@ -108,7 +107,7 @@ class Database:
 
     def buscar_relatorio_por_status(self, id_filtro):
         """Busca dispositivos filtrados por um ID de status específico."""
-        if not self.client:  # Corrigido para minúsculo
+        if not self.client:
             return []
 
         resposta = self.client.table("dispositivos").select(
@@ -140,7 +139,7 @@ class Database:
 
     def buscar_relatorio_por_sensor(self, id_sensor):
         """Busca os registros da junção filtrando pelo ID do sensor."""
-        if not self.client:  # Corrigido para minúsculo
+        if not self.client:
             return []
 
         requisicao = self.client.table("juncao_ds")\
