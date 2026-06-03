@@ -45,15 +45,31 @@ class Database:
             print(f"Erro ao carregar logins do banco: {e}")
             return []
     
-    def listar_leituras(self) -> list:
-        """Retorna todas as leituras da tabela de leituras."""
-        if not self.client:  # Corrigido para minúsculo
+    def listar_leituras(self, id_sessao: str = None, id_dispositivo: int = None, id_sensor: int = None) -> list:
+        """Retorna leituras da tabela de leituras, com filtros opcionais."""
+        if not self.client:
             return []
 
         try:
-            resposta = self.client.table("leituras").select(
+            query = self.client.table("leituras").select(
                 "id_leituras, id_sessoes_leituras, id_etiquetas_sensores, valores_lidos, data_hora"
-            ).execute()
+            )
+
+            if id_sessao is not None:
+                query = query.eq("id_sessoes_leituras", id_sessao)
+            elif id_dispositivo is not None:
+                sessoes = self.listar_sessoes_leituras(id_dispositivo=id_dispositivo)
+                session_ids = [s.get("id_sessoes_leituras") for s in sessoes if s.get("id_sessoes_leituras") is not None]
+                if session_ids:
+                    query = query.in_("id_sessoes_leituras", session_ids)
+                else:
+                    print(f"Nenhuma sessão encontrada para id_dispositivo {id_dispositivo}")
+                    return []
+
+            if id_sensor is not None:
+                query = query.eq("id_etiquetas_sensores", id_sensor)
+
+            resposta = query.order("data_hora", desc=True).execute()
             print(f"Leituras listadas: {resposta.data}")
             return resposta.data or []
         except Exception as e:
@@ -261,6 +277,45 @@ class Database:
         except Exception as e:
             print(f"Erro ao carregar sessões de leitura: {e}")
             return []
+
+    def listar_agendamentos(self, id_dispositivo: int = None) -> list:
+        """Retorna os agendamentos (opcionalmente filtrados por dispositivo)."""
+        if not self.client:
+            return []
+
+        try:
+            query = self.client.table("agendamentos").select(
+                "id_agendamentos, datas_agendamentos, id_dispositivos, descricao_livre"
+            )
+            if id_dispositivo is not None:
+                query = query.eq("id_dispositivos", id_dispositivo)
+
+            resposta = query.order("datas_agendamentos", desc=False).execute()
+            print(f"Agendamentos listados: {resposta.data}")
+            return resposta.data or []
+        except Exception as e:
+            print(f"Erro ao carregar agendamentos: {e}")
+            return []
+
+    def cadastrar_agendamento(self, datas_agendamento: str, id_dispositivo: int, descricao: str) -> dict:
+        """Insere um novo agendamento na tabela `agendamentos`. Retorna o registro criado ou None."""
+        if not self.client:
+            return None
+
+        try:
+            novo = {
+                "datas_agendamentos": datas_agendamento,
+                "id_dispositivos": id_dispositivo,
+                "descricao_livre": descricao,
+            }
+            resposta = self.client.table("agendamentos").insert(novo).execute()
+            print(f"Agendamento cadastrado: {resposta.data}")
+            if resposta.data:
+                return resposta.data[0] if isinstance(resposta.data, list) else resposta.data
+            return None
+        except Exception as e:
+            print(f"Erro ao cadastrar agendamento: {e}")
+            return None
 
     @staticmethod
     def _obter_timestamp_agora() -> str:

@@ -31,7 +31,7 @@ class HomeView():
 
     def get_settings_view(self):
         if self._settings_view_instance is None:
-            self._settings_view_instance = self.system.view.page.elementsTheAppbar.settings(self.system)
+            self._settings_view_instance = self.system.view.page.settings(self.system)
         return self._settings_view_instance
 
     def get_notifications_view(self):

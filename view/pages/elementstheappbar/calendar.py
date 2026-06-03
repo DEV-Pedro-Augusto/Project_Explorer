@@ -1,7 +1,109 @@
+from datetime import datetime
+
 class CalendarView:
     def __init__(self, system):
         self.system = system
         self.ft = system.ft
+        self.agendamentos_table = None
+
+    def _formatar_timestamp(self, timestamp_str):
+        if not timestamp_str:
+            return "N/A"
+        try:
+            dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+            return dt.strftime("%d/%m %H:%M")
+        except Exception:
+            return str(timestamp_str)[:19]
+
+    def _carregar_agendamentos(self):
+        try:
+            id_dispositivo = self.system.obter_id_dispositivo()
+            agendamentos = self.system.model.database.listar_agendamentos(id_dispositivo=id_dispositivo)
+            return agendamentos or []
+        except Exception as e:
+            print(f"Erro ao carregar agendamentos: {e}")
+            return []
+
+    def _build_agendamentos_rows(self, agendamentos):
+        if not agendamentos:
+            return [
+                self.ft.DataRow(cells=[
+                    self.ft.DataCell(self.ft.Text("Nenhum agendamento cadastrado ainda", color=self.ft.Colors.GREY_500, size=11)),
+                    self.ft.DataCell(self.ft.Text("", color=self.ft.Colors.GREY_500, size=11)),
+                    self.ft.DataCell(self.ft.Text("", color=self.ft.Colors.GREY_500, size=11)),
+                ])
+            ]
+
+        rows = []
+        for ag in agendamentos:
+            rows.append(
+                self.ft.DataRow(cells=[
+                    self.ft.DataCell(self.ft.Text(self._formatar_timestamp(ag.get('datas_agendamentos')), color=self.ft.Colors.WHITE70, size=11)),
+                    self.ft.DataCell(self.ft.Text(str(ag.get('id_dispositivos', 'N/A')), color=self.ft.Colors.WHITE70, size=11)),
+                    self.ft.DataCell(self.ft.Text(ag.get('descricao_livre', '-'), color=self.ft.Colors.WHITE70, size=11)),
+                ])
+            )
+        return rows
+
+    def _abrir_dialog_novo_agendamento(self, e=None):
+        ft = self.ft
+        id_dispositivo = self.system.obter_id_dispositivo()
+        self.input_data = ft.TextField(label="Data/Hora (ISO)", hint_text="2026-06-10T14:30:00", width=300)
+        self.input_descricao = ft.TextField(label="Descrição do Teste", width=300)
+        self.input_dispositivo = None
+
+        if id_dispositivo is None:
+            self.input_dispositivo = ft.TextField(label="ID do Dispositivo", hint_text="Digite o ID do dispositivo", width=300)
+
+        def on_submit(_e=None):
+            datas = self.input_data.value
+            descricao = self.input_descricao.value or ''
+            dispositivo = id_dispositivo
+            if dispositivo is None:
+                dispositivo_text = self.input_dispositivo.value if self.input_dispositivo else None
+                if not dispositivo_text:
+                    print('Informe o ID do dispositivo antes de salvar.')
+                    return
+                try:
+                    dispositivo = int(dispositivo_text)
+                except ValueError:
+                    print('ID de dispositivo inválido.')
+                    return
+            try:
+                novo = self.system.model.database.cadastrar_agendamento(datas, dispositivo, descricao)
+                if novo:
+                    dlg.open = False
+                    self._refresh_agendamentos()
+                else:
+                    print('Falha ao cadastrar agendamento')
+            except Exception as ex:
+                print(f'Erro ao cadastrar agendamento: {ex}')
+
+        actions = [
+            ft.TextButton("Cancelar", on_click=lambda e: (setattr(dlg, 'open', False), self.system.page.update())),
+            ft.ElevatedButton("Salvar", on_click=on_submit)
+        ]
+
+        content_controls = [self.input_data, self.input_descricao]
+        if self.input_dispositivo is not None:
+            content_controls.append(self.input_dispositivo)
+
+        dlg = ft.AlertDialog(
+            title=ft.Text("Agendar Novo Teste", weight=ft.FontWeight.BOLD),
+            content=ft.Column(content_controls, spacing=10),
+            actions=actions,
+            modal=True
+        )
+        self.system.page.dialog = dlg
+        dlg.open = True
+        self.system.page.update()
+
+    def _refresh_agendamentos(self):
+        if not self.agendamentos_table:
+            return
+        agendamentos = self._carregar_agendamentos()
+        self.agendamentos_table.rows = self._build_agendamentos_rows(agendamentos)
+        self.system.page.update()
 
     def render(self):
         # Paleta de Cores Alinhada
@@ -9,7 +111,21 @@ class CalendarView:
         BORDER_COLOR = "#1f2937"
         ACCENT_BLUE = self.ft.Colors.BLUE_400
         ACCENT_PURPLE = self.ft.Colors.PURPLE_400
-        
+        agendamentos = self._carregar_agendamentos()
+        total_agendamentos = len(agendamentos)
+        self.agendamentos_table = self.ft.DataTable(
+            border=self.ft.border.all(1, BORDER_COLOR),
+            border_radius=10,
+            heading_row_color="#1f2937",
+            columns=[
+                self.ft.DataColumn(self.ft.Text("Data Agendada", color=self.ft.Colors.CYAN_400, size=12, weight="bold")),
+                self.ft.DataColumn(self.ft.Text("Dispositivo", color=self.ft.Colors.WHITE, size=12)),
+                self.ft.DataColumn(self.ft.Text("Descrição", color=self.ft.Colors.WHITE, size=12)),
+            ],
+            rows=self._build_agendamentos_rows(agendamentos),
+            bgcolor=BG_CARD,
+        )
+
         return self.ft.Column([
             # CABEÇALHO
             self.ft.Row([
@@ -26,7 +142,8 @@ class CalendarView:
                     icon=self.ft.Icons.ADD,
                     bgcolor=ACCENT_BLUE,
                     color=self.ft.Colors.BLACK,
-                    style=self.ft.ButtonStyle(shape=self.ft.RoundedRectangleBorder(radius=8))
+                    style=self.ft.ButtonStyle(shape=self.ft.RoundedRectangleBorder(radius=8)),
+                    on_click=self._abrir_dialog_novo_agendamento
                 )
             ], alignment=self.ft.MainAxisAlignment.SPACE_BETWEEN),
             
@@ -124,8 +241,17 @@ class CalendarView:
                     type_label="SOFTWARE",
                     ft=self.ft, bg_card=BG_CARD, border_color=BORDER_COLOR
                 ),
-            ], spacing=12, scroll=self.ft.ScrollMode.AUTO, expand=True)
+            ], spacing=12, scroll=self.ft.ScrollMode.AUTO, expand=True),
             
+            self.ft.Container(height=20),
+            self.ft.Row([
+                self.ft.Column([
+                    self.ft.Text("Agendamentos no Banco", size=18, weight=self.ft.FontWeight.BOLD, color=self.ft.Colors.WHITE),
+                    self.ft.Text(f"{total_agendamentos} agendamento(s) encontrados", color=self.ft.Colors.GREY_400, size=12)
+                ]),
+            ], alignment=self.ft.MainAxisAlignment.SPACE_BETWEEN),
+            self.ft.Container(height=10),
+            self.agendamentos_table
         ], expand=True, scroll=self.ft.ScrollMode.AUTO)
 
     def build_timeline_item(self, date, title, local, sensors, type_color, type_label, ft, bg_card, border_color):

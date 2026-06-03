@@ -56,6 +56,52 @@ class EventsView:
             print(f"Erro ao carregar sessões: {e}")
             return []
 
+    def _carregar_agendamentos(self):
+        """Carrega agendamentos da tabela `agendamentos`. Filtra por dispositivo selecionado quando possível."""
+        try:
+            id_dispositivo = self.system.obter_id_dispositivo()
+            agendamentos = self.system.model.database.listar_agendamentos(id_dispositivo=id_dispositivo) if hasattr(self.system.model.database, 'listar_agendamentos') else []
+            return agendamentos or []
+        except Exception as e:
+            print(f"Erro ao carregar agendamentos: {e}")
+            return []
+
+    def _abrir_dialog_novo_agendamento(self, e=None):
+        """Abre diálogo para registrar novo agendamento."""
+        ft = self.ft
+        self.input_data = ft.TextField(label="Data/Hora (ISO)", hint_text="2026-06-10T14:30:00", width=300)
+        self.input_descricao = ft.TextField(label="Descrição", width=300)
+
+        def on_submit(_e=None):
+            datas = self.input_data.value
+            descricao = self.input_descricao.value or ''
+            id_dispositivo = self.system.obter_id_dispositivo() or None
+            try:
+                novo = self.system.model.database.cadastrar_agendamento(datas, id_dispositivo, descricao)
+                if novo:
+                    dlg.open = False
+                    self.system.page.update()
+                    self.system.atualizar_tela() if hasattr(self.system, 'atualizar_tela') else None
+                else:
+                    print('Falha ao cadastrar agendamento')
+            except Exception as ex:
+                print(f'Erro ao cadastrar agendamento: {ex}')
+
+        actions = [
+            ft.TextButton("Cancelar", on_click=lambda e: (setattr(dlg, 'open', False), self.system.page.update())),
+            ft.ElevatedButton("Salvar", on_click=on_submit)
+        ]
+
+        dlg = ft.AlertDialog(
+            title=ft.Text("Novo Agendamento", weight=ft.FontWeight.BOLD),
+            content=ft.Column([self.input_data, self.input_descricao], spacing=10),
+            actions=actions,
+            modal=True
+        )
+        self.system.page.dialog = dlg
+        dlg.open = True
+        self.system.page.update()
+
     def _criar_linhas_tabela(self, sessoes):
         """Cria as linhas da tabela a partir das sessões de leitura."""
         linhas = []

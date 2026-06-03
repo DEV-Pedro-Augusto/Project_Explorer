@@ -1,4 +1,5 @@
 import flet as ft
+from datetime import datetime
 
 class DashboardView:
     def __init__(self, system, nome_carrinho):
@@ -13,7 +14,7 @@ class DashboardView:
             actions=[
                 self.ft.ElevatedButton("Entendi e Conectei", on_click=lambda e: self.fechar_popup(dlg), bgcolor=self.ft.Colors.BLUE_600, color=self.ft.Colors.WHITE)
             ],
-            bgcolor="#121826", # Cor escura para combinar
+            bgcolor="#121826",
             shape=self.ft.RoundedRectangleBorder(radius=10)
         )
         self.system.page.dialog = dlg
@@ -24,63 +25,227 @@ class DashboardView:
         dlg.open = False
         self.system.page.update()
 
-    def render(self):
-        # --- FUNÇÕES GERADORAS DE COMPONENTES ---
+    def _format_timestamp(self, timestamp_str):
+        if not timestamp_str:
+            return "N/A"
+        try:
+            return datetime.fromisoformat(timestamp_str.replace('Z', '+00:00')).strftime("%d/%m %H:%M")
+        except Exception:
+            return str(timestamp_str)[:19]
 
-        # 1. Cartão de Alerta (Canto superior esquerdo)
-        alert_card = self.ft.Container(
+    def _load_sessoes(self):
+        try:
+            id_usuario = self.system.obter_id_usuario()
+            id_dispositivo = self.system.obter_id_dispositivo()
+            if id_dispositivo:
+                sessoes = self.system.model.database.listar_sessoes_leituras(id_dispositivo=id_dispositivo)
+            else:
+                sessoes = self.system.model.database.listar_sessoes_leituras(id_usuario=id_usuario)
+            return sessoes or []
+        except Exception as e:
+            print(f"Erro ao carregar sessões do dashboard: {e}")
+            return []
+
+    def _load_session_readings(self, id_sessao):
+        if not id_sessao:
+            return []
+        try:
+            return self.system.model.database.listar_leituras(id_sessao=id_sessao) or []
+        except Exception as e:
+            print(f"Erro ao carregar leituras do dashboard: {e}")
+            return []
+
+    def _build_sensor_badges(self, leituras):
+        latest_by_sensor = {}
+        for leitura in leituras:
+            sensor = leitura.get('id_etiquetas_sensores', 'Desconhecido')
+            ts = leitura.get('data_hora')
+            if sensor not in latest_by_sensor or (ts and latest_by_sensor[sensor].get('data_hora', '') < ts):
+                latest_by_sensor[sensor] = leitura
+
+        badges = []
+        colors_palette = [
+            self.ft.Colors.CYAN_400, 
+            self.ft.Colors.YELLOW_400, 
+            self.ft.Colors.BLUE_300, 
+            self.ft.Colors.GREEN_400, 
+            self.ft.Colors.RED_500, 
+            self.ft.Colors.PURPLE_400
+        ]
+
+        for idx, (sensor, leitura) in enumerate(list(latest_by_sensor.items())[:6]):
+            value = leitura.get('valores_lidos', 'N/A')
+            color = colors_palette[idx % len(colors_palette)]
+            
+            badges.append(
+                self.ft.Row([
+                    self.ft.Container(
+                        content=self.ft.Icon(self.ft.Icons.SPEED, color=color, size=28),
+                        padding=8,
+                        border=self.ft.border.all(1, color),
+                        border_radius=10,
+                        bgcolor="#0A1122"
+                    ),
+                    self.ft.Column([
+                        self.ft.Row([
+                            self.ft.Text(str(value), size=22, weight=self.ft.FontWeight.W_900, color=self.ft.Colors.WHITE),
+                            self.ft.Text("", size=12, color=self.ft.Colors.GREY_400)
+                        ], spacing=2),
+                        self.ft.Text(str(sensor), size=12, color=self.ft.Colors.GREY_500)
+                    ], spacing=0)
+                ], spacing=10)
+            )
+            
+        if not badges:
+            return [self.ft.Text("Nenhuma leitura na última sessão.", color=self.ft.Colors.GREY_500, size=13)]
+        return badges
+
+    # --- CORREÇÃO DAS GRADES (Substituído self.ft.chart.BorderSide por self.ft.BorderSide) ---
+    def _build_line_chart(self, leituras):
+        if not leituras:
+            return self.ft.Text("Aguardando dados numéricos...", color=self.ft.Colors.GREY_500, size=12)
+
+        leituras_cronologicas = sorted(leituras, key=lambda l: l.get('data_hora') or '')[-8:]
+        data_points = []
+        for idx, l in enumerate(leituras_cronologicas):
+            try:
+                data_points.append(self.ft.LineChartDataPoint(idx, float(l.get('valores_lidos', 0))))
+            except ValueError:
+                continue
+
+        if not data_points:
+            return self.ft.Text("Sem dados convertíveis para gráfico", color=self.ft.Colors.GREY_500, size=12)
+
+        return self.ft.LineChart(
+            data_series=[
+                self.ft.LineChartData(
+                    data_points=data_points,
+                    stroke_width=3,
+                    color=self.ft.Colors.CYAN_400,
+                    curved=True,
+                    below_line_bgcolor=self.ft.Colors.with_opacity(0.1, self.ft.Colors.CYAN_400),
+                )
+            ],
+            border=self.ft.border.all(1, "#1E293B"),
+            horizontal_grid_lines=self.ft.BorderSide(1, "#1E293B"),
+            vertical_grid_lines=self.ft.BorderSide(1, "#1E293B"),
+            expand=True
+        )
+
+    def _build_bar_chart(self, leituras):
+        if not leituras:
+            return self.ft.Text("Aguardando dados...", color=self.ft.Colors.GREY_500, size=12)
+
+        sensor_counts = {}
+        for l in leituras:
+            s = l.get('id_etiquetas_sensores', 'Sensor')
+            sensor_counts[s] = sensor_counts.get(s, 0) + 1
+
+        bar_groups = []
+        for idx, (sensor, count) in enumerate(list(sensor_counts.items())[:4]):
+            bar_groups.append(
+                self.ft.BarChartGroup(
+                    x=idx,
+                    bar_rods=[self.ft.BarChartRod(from_y=0, to_y=count, width=16, color=self.ft.Colors.BLUE_400, border_radius=4)]
+                )
+            )
+
+        if not bar_groups:
+            return self.ft.Text("Sem dados de sensores", color=self.ft.Colors.GREY_500, size=12)
+
+        return self.ft.BarChart(
+            bar_groups=bar_groups,
+            border=self.ft.border.all(1, "#1E293B"),
+            expand=True
+        )
+
+    def _build_readings_rows(self, leituras):
+        rows = []
+        if not leituras:
+            rows.append(self.ft.DataRow(cells=[
+                self.ft.DataCell(self.ft.Text("Sem leituras", color=self.ft.Colors.GREY_500, size=11)),
+                self.ft.DataCell(self.ft.Text("--", color=self.ft.Colors.GREY_500, size=11)),
+                self.ft.DataCell(self.ft.Text("--", color=self.ft.Colors.GREY_500, size=11)),
+                self.ft.DataCell(self.ft.Text("--", color=self.ft.Colors.GREY_500, size=11)),
+                self.ft.DataCell(self.ft.Text("--", color=self.ft.Colors.GREY_500, size=11)),
+            ]))
+            return rows
+
+        leituras_ordenadas = sorted(leituras, key=lambda l: l.get('data_hora') or '', reverse=True)
+        for leitura in leituras_ordenadas[:6]: 
+            rows.append(self.ft.DataRow(cells=[
+                self.ft.DataCell(self.ft.Text(self._format_timestamp(leitura.get('data_hora')), color=self.ft.Colors.WHITE70, size=11)),
+                self.ft.DataCell(self.ft.Text(str(leitura.get('id_sessoes_leituras', '-')), color=self.ft.Colors.WHITE70, size=11)),
+                self.ft.DataCell(self.ft.Text(str(leitura.get('id_etiquetas_sensores', '-')), color=self.ft.Colors.WHITE70, size=11)),
+                self.ft.DataCell(self.ft.Text(str(leitura.get('valores_lidos', '-')), color=self.ft.Colors.CYAN_400, size=11, weight=self.ft.FontWeight.BOLD)),
+                self.ft.DataCell(self.ft.Text(str(leitura.get('id_leituras', '-')), color=self.ft.Colors.WHITE70, size=11)),
+            ]))
+        return rows
+
+    def render(self):
+        BG_CARD = "#111827"
+        BORDER_COLOR = "#1f2937"
+        ACCENT_CYAN = self.ft.Colors.CYAN_400
+
+        sessoes = self._load_sessoes()
+        total_sessoes = len(sessoes)
+        em_andamento = sum(1 for s in sessoes if not s.get('fim_missao'))
+        ultima_sessao = sessoes[0] if sessoes else None
+        ultimo_id_sessao = ultima_sessao.get('id_sessoes_leituras') if ultima_sessao else None
+        
+        leituras = self._load_session_readings(ultimo_id_sessao)
+        total_leituras = len(leituras)
+        ultima_atualizacao = self._format_timestamp(leituras[0].get('data_hora')) if leituras else "N/A"
+        
+        descricao_sessao = ultima_sessao.get('descricao_livre', 'Sem descrição') if ultima_sessao else 'Nenhuma sessão ativa'
+        inicio_sessao = self._format_timestamp(ultima_sessao.get('inicio_missao')) if ultima_sessao else 'N/A'
+        fim_sessao = self._format_timestamp(ultima_sessao.get('fim_missao')) if ultima_sessao and ultima_sessao.get('fim_missao') else 'Em andamento'
+
+        # 1. Header
+        header = self.ft.Row([
+            self.ft.Column([
+                self.ft.Row([
+                    self.ft.Icon(self.ft.Icons.DASHBOARD_ROUNDED, color=ACCENT_CYAN, size=32),
+                    self.ft.Text(f"Dashboard do {self.nome_carrinho}", size=28, weight=self.ft.FontWeight.BOLD, color=self.ft.Colors.WHITE)
+                ], spacing=10),
+                self.ft.Text("Métricas de telemetria integradas em tempo real com o banco de dados.", color=self.ft.Colors.GREY_400, size=14)
+            ]),
+            self.ft.IconButton(
+                icon=self.ft.Icons.REFRESH_ROUNDED,
+                icon_color=ACCENT_CYAN,
+                tooltip="Atualizar dashboard",
+                on_click=lambda e: self.system.atualizar_tela() if hasattr(self.system, 'atualizar_tela') else None
+            )
+        ], alignment=self.ft.MainAxisAlignment.SPACE_BETWEEN)
+
+        # 2. Seção Superior
+        session_info_card = self.ft.Container(
             content=self.ft.Column([
                 self.ft.Row([
-                    self.ft.Icon(self.ft.Icons.WARNING_AMBER_ROUNDED, color=self.ft.Colors.AMBER, size=20),
-                    self.ft.Text("ALERTA DE SEGURANÇA", weight=self.ft.FontWeight.BOLD, color=self.ft.Colors.WHITE, size=14)
+                    self.ft.Icon(self.ft.Icons.SATELLITE_ALT_ROUNDED, color=ACCENT_CYAN, size=20),
+                    self.ft.Text(f"SESSÃO ATIVA #{ultimo_id_sessao or 'N/A'}", weight=self.ft.FontWeight.BOLD, color=self.ft.Colors.WHITE, size=14)
                 ]),
-                self.ft.Text(
-                    "Detectado: Concentração elevada de Gás (NH3) na área de teste. Valor Atual: 135 ppm (Limite de Segurança: 50 ppm).", 
-                    color=self.ft.Colors.GREY_300, 
-                    size=12
-                )
+                self.ft.Text(descricao_sessao, color=self.ft.Colors.GREY_300, size=12, max_lines=2),
+                self.ft.Text(f"Período: {inicio_sessao} → {fim_sessao}", size=11, color=self.ft.Colors.GREY_500)
             ], spacing=5),
             bgcolor="#0B132B", 
             padding=15,
             border_radius=10,
-            border=self.ft.border.all(1, self.ft.Colors.RED_900),
+            border=self.ft.border.all(1, "#1E293B"),
             expand=3
         )
 
-        # 2. Minicartões de Sensores (Topo direita)
-        def create_sensor_badge(icon_name, color, value, unit, label):
-            return self.ft.Row([
-                self.ft.Container(
-                    content=self.ft.Icon(icon_name, color=color, size=28),
-                    padding=8,
-                    border=self.ft.border.all(1, color),
-                    border_radius=10,
-                    bgcolor="#0A1122"
-                ),
-                self.ft.Column([
-                    self.ft.Row([
-                        self.ft.Text(value, size=22, weight=self.ft.FontWeight.W_900, color=self.ft.Colors.WHITE), 
-                        self.ft.Text(unit, size=12, color=self.ft.Colors.GREY_400)
-                    ], spacing=2),
-                    self.ft.Text(label, size=12, color=self.ft.Colors.GREY_500)
-                ], spacing=0)
-            ], spacing=10)
-
         sensors_row = self.ft.Container(
-            content=self.ft.Row([
-                create_sensor_badge(self.ft.Icons.WATER_DROP, self.ft.Colors.CYAN_400, "58", "%", "Umidade"),
-                create_sensor_badge(self.ft.Icons.WB_SUNNY, self.ft.Colors.YELLOW_400, "320", "lux", "Luminosidade"),
-                create_sensor_badge(self.ft.Icons.STRAIGHTEN, self.ft.Colors.BLUE_300, "87", "cm", "Distância"),
-                create_sensor_badge(self.ft.Icons.AIR, self.ft.Colors.GREEN_400, "135", "ppm", "Gás"),
-                create_sensor_badge(self.ft.Icons.THERMOSTAT, self.ft.Colors.RED_500, "27.1", "°C", "Temperatura"),
-                create_sensor_badge(self.ft.Icons.SPEED, self.ft.Colors.PURPLE_400, "1013", "hPa", "Pressão"),
-            ], alignment=self.ft.MainAxisAlignment.SPACE_BETWEEN),
+            content=self.ft.Row(
+                self._build_sensor_badges(leituras), 
+                alignment=self.ft.MainAxisAlignment.SPACE_BETWEEN
+            ),
             expand=7 
         )
 
-        top_section = self.ft.Row([alert_card, sensors_row], spacing=20)
+        top_section = self.ft.Row([session_info_card, sensors_row], spacing=20)
 
-        # 3. Cartões de Status (A linha do meio)
+        # 3. Linha do Meio
         def create_info_card(title, value, icon_name=None, highlight=False):
             return self.ft.Container(
                 content=self.ft.Column([
@@ -90,60 +255,79 @@ class DashboardView:
                     ]),
                     self.ft.Text(value, color=self.ft.Colors.WHITE, size=20, weight=self.ft.FontWeight.BOLD)
                 ], spacing=10),
-                bgcolor="#0B1A40" if highlight else "#111827",
+                bgcolor="#0B1A40" if highlight else BG_CARD,
                 padding=20,
                 border_radius=10,
+                border=self.ft.border.all(1, BORDER_COLOR),
                 expand=1
             )
 
         status_row = self.ft.Row([
-            create_info_card("Estabilidade Atmosférica", "Pressão ambiente dentro da faixa normal.", self.ft.Icons.SMART_TOY),
-            create_info_card("Status do Robô", "Online - Bateria: 82%", self.ft.Icons.TRENDING_UP, highlight=True),
-            create_info_card("Leituras Coletadas", "112", self.ft.Icons.PERSON_OUTLINE),
-            create_info_card("Última Atualização", "29 min", self.ft.Icons.FACT_CHECK_OUTLINED),
+            create_info_card("Sessões Registradas", f"{total_sessoes}", self.ft.Icons.HISTORY_TOGGLE_OFF_ROUNDED),
+            create_info_card("Em Andamento", f"{em_andamento}", self.ft.Icons.PLAY_CIRCLE_OUTLINE, highlight=True),
+            create_info_card("Leituras da Sessão", f"{total_leituras}", self.ft.Icons.SPEED),
+            create_info_card("Última Sincronização", ultima_atualizacao, self.ft.Icons.FACT_CHECK_OUTLINED),
         ], spacing=20)
 
-        # 4. Área de Gráficos (Mockups estilizados)
-        def create_mock_chart(title, subtitle, icon, color):
-            return self.ft.Container(
-                content=self.ft.Column([
-                    self.ft.Text(title, color=self.ft.Colors.WHITE, size=14, weight=self.ft.FontWeight.W_500),
-                    self.ft.Container(expand=True), 
-                    self.ft.Icon(icon, size=60, color=color, opacity=0.3),
-                    self.ft.Text(subtitle, color=self.ft.Colors.GREY_500, size=12),
-                    self.ft.Container(expand=True),
-                ], alignment=self.ft.MainAxisAlignment.CENTER, horizontal_alignment=self.ft.CrossAxisAlignment.CENTER),
-                bgcolor="#111827",
-                padding=20,
-                border_radius=10,
-                expand=1,
-                border=self.ft.border.all(1, "#1E293B")
-            )
-
+        # 4. DUAS LINHAS DE GRÁFICOS (Layout idêntico ao DashboardView2 com dados dinâmicos)
         charts_row_1 = self.ft.Row([
-            create_mock_chart("Sensor Data Distribution", "Gráfico de Pizza em breve", self.ft.Icons.PIE_CHART, self.ft.Colors.BLUE_400),
-            create_mock_chart("Temperature per Hour", "Gráfico de Linha em breve", self.ft.Icons.SHOW_CHART, self.ft.Colors.CYAN_400),
-            create_mock_chart("Distance traveled in seven days", "Gráfico de Barras em breve", self.ft.Icons.BAR_CHART, self.ft.Colors.BLUE_600),
-        ], expand=True, spacing=20)
+            self.ft.Container(
+                content=self.ft.Column([
+                    self.ft.Text("Variação Temporal de Leituras (Linha)", color=self.ft.Colors.WHITE, size=14, weight=self.ft.FontWeight.W_500),
+                    self.ft.Container(height=5),
+                    self._build_line_chart(leituras),
+                ]),
+                bgcolor=BG_CARD, padding=20, border_radius=10, border=self.ft.border.all(1, "#1E293B"), height=220, expand=1
+            ),
+            self.ft.Container(
+                content=self.ft.Column([
+                    self.ft.Text("Volume de Registros por Sensor (Barras)", color=self.ft.Colors.WHITE, size=14, weight=self.ft.FontWeight.W_500),
+                    self.ft.Container(height=5),
+                    self._build_bar_chart(leituras),
+                ]),
+                bgcolor=BG_CARD, padding=20, border_radius=10, border=self.ft.border.all(1, "#1E293B"), height=220, expand=1
+            )
+        ], spacing=20)
 
-        charts_row_2 = self.ft.Row([
-            create_mock_chart("Air Quality Status", "Métrica Detalhada", self.ft.Icons.AIR, self.ft.Colors.RED_400),
-            create_mock_chart("Ammonia (NH3) Concentration", "Histórico de 24h", self.ft.Icons.SCATTER_PLOT, self.ft.Colors.PURPLE_400),
-            create_mock_chart("Alcohol Variation", "Níveis de variação", self.ft.Icons.STACKED_BAR_CHART, self.ft.Colors.YELLOW_400),
-        ], expand=True, spacing=20)
+        # Tabela de Histórico
+        readings_table = self.ft.DataTable(
+            border=self.ft.border.all(1, BORDER_COLOR),
+            border_radius=10,
+            heading_row_color="#1f2937",
+            columns=[
+                self.ft.DataColumn(self.ft.Text("Hora", color=self.ft.Colors.CYAN_400, size=12, weight=self.ft.FontWeight.BOLD)),
+                self.ft.DataColumn(self.ft.Text("Sessão", color=self.ft.Colors.WHITE, size=12)),
+                self.ft.DataColumn(self.ft.Text("Sensor", color=self.ft.Colors.WHITE, size=12)),
+                self.ft.DataColumn(self.ft.Text("Valor Lido", color=self.ft.Colors.WHITE, size=12)),
+                self.ft.DataColumn(self.ft.Text("ID Registro", color=self.ft.Colors.WHITE, size=12)),
+            ],
+            rows=self._build_readings_rows(leituras),
+            bgcolor=BG_CARD,
+            column_spacing=35,
+            divider_thickness=1,
+            expand=True
+        )
 
-        # --- MONTAGEM DO LAYOUT FINAL (Apenas o conteúdo interno) ---
+        # --- GRID FINAL ---
         area_dashboard = self.ft.Column([
+            header,
+            self.ft.Container(height=10),
             top_section,
             self.ft.Container(height=10),
             status_row,
             self.ft.Container(height=10),
-            charts_row_1,
-            charts_row_2
+            charts_row_1, # Gráficos renderizados com sucesso!
+            self.ft.Container(height=15),
+            self.ft.Text("Registros de Telemetria Recentes", size=16, weight=self.ft.FontWeight.BOLD, color=self.ft.Colors.WHITE),
+            self.ft.Container(height=5),
+            self.ft.Container(
+                bgcolor=BG_CARD,
+                padding=10,
+                border_radius=10,
+                border=self.ft.border.all(1, BORDER_COLOR),
+                content=self.ft.Row([readings_table], scroll=self.ft.ScrollMode.ALWAYS)
+            )
         ], expand=True, scroll=self.ft.ScrollMode.AUTO)
 
-        # Dispara o popup
         self.mostrar_popup_pareamento()
-
-        # Retorna o conteúdo ao invés de adicionar à page
         return area_dashboard
