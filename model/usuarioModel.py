@@ -1,17 +1,49 @@
-"""User model."""
-
-from __future__ import annotations
-
-from typing import Any, Optional
-
 
 class UsuarioModel:
-    """Represents user-related data and operations."""
 
-    def __init__(self, db: Optional[Any] = None):
-        self.db = db
+    def __init__(self):
+        self.usuario_logado = None  # Será preenchido após autenticação
+        self.id_usuario_logado = None  # ID do usuário para filtros
+        self.nome_usuario_logado = None  # Nome do usuário para exibição
+        self.id_dispositivo_selecionado = None  # Dispositivo/carrinho atualmente selecionado
+    
 
-    def authenticate(self, username: str, password: str) -> bool:
-        """Validate user credentials."""
-        # TODO: implement authentication logic
-        return False
+    def definir_usuario(self, usuario: dict):
+        """Define o usuário como logado no sistema."""
+        self.usuario_logado = usuario
+        self.id_usuario_logado = usuario.get('id_usuarios')
+        self.nome_usuario_logado = usuario.get('nomes_usuarios', 'Desconhecido')
+        print(f"Usuário logado: {self.nome_usuario_logado}")
+    
+    def obter_usuario(self) -> dict:
+        """Retorna o usuário atualmente logado."""
+        return self.usuario_logado
+    
+    def obter_id_usuario(self) -> int:
+        """Retorna o ID do usuário logado."""
+        return self.id_usuario_logado
+    
+    def obter_nome_usuario(self) -> str:
+        """Retorna o nome do usuário logado."""
+        return self.nome_usuario_logado
+    
+    def limpar_usuario(self):
+        """Limpa a sessão do usuário (logout)."""
+        self.usuario_logado = None
+        self.id_usuario_logado = None
+        self.nome_usuario_logado = None
+        self.id_dispositivo_selecionado = None
+        print("Usuário deslogado")
+
+    def definir_dispositivo(self, id_dispositivo: int):
+        """Define o dispositivo/carrinho atual para filtragem nas views."""
+        self.id_dispositivo_selecionado = id_dispositivo
+        print(f"Dispositivo selecionado: {id_dispositivo}")
+
+    def obter_id_dispositivo(self) -> int:
+        """Retorna o ID do dispositivo/carrinho selecionado."""
+        return self.id_dispositivo_selecionado
+
+    def limpar_dispositivo(self):
+        """Limpa o dispositivo selecionado."""
+        self.id_dispositivo_selecionado = None

@@ -1,6 +1,13 @@
 import flet as ft
 import time
+import os
+import httpx
+from supabase import create_client, Client
+from supabase.lib.client_options import SyncClientOptions
 
+# Configurações (Idealmente via variáveis de ambiente)
+SUPABASE_URL = "https://ulgnemjbobycljlfuitc.supabase.co"
+SUPABASE_KEY = "sb_publishable_BsXf3gfYCYCAz5LKlgHl_w_sGQjjMwd"
 #    VIEW: Elements view all
     
     # Pages
@@ -91,6 +98,13 @@ def main(page: ft.Page):
         page,
         ft,
         time,
+        os,
+        httpx,
+        create_client,
+        Client,
+        SyncClientOptions,
+        SUPABASE_URL,
+        SUPABASE_KEY,
         MainView( 
             MainWindow(
                 HomeView, 
