@@ -10,6 +10,7 @@ class MainWindow:
         Settings,
         cadastro,
         cadastro_carrinho,
+        agendamento,
         MainElementsAppbar,
 ):
      
@@ -19,6 +20,7 @@ class MainWindow:
         self.settings = Settings
         self.cadastro = cadastro
         self.cadastro_carrinho = cadastro_carrinho
+        self.agendamento = agendamento
         self.elementsTheAppbar = MainElementsAppbar
 
     

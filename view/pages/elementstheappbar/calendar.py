@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 class CalendarView:
     def __init__(self, system):
@@ -11,9 +11,9 @@ class CalendarView:
             return "N/A"
         try:
             dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
-            return dt.strftime("%d/%m %H:%M")
+            return dt.strftime("%d/%m/%Y %H:%M")
         except Exception:
-            return str(timestamp_str)[:19]
+            return str(timestamp_str)[:16]
 
     def _carregar_agendamentos(self):
         try:
@@ -24,23 +24,74 @@ class CalendarView:
             print(f"Erro ao carregar agendamentos: {e}")
             return []
 
+    def _obter_proximo_evento(self, agendamentos):
+        """Encontra o agendamento futuro mais próximo do horário atual."""
+        agora = datetime.now(timezone.utc)
+        proximo_evento = None
+        menor_diferenca = None
+
+        for ag in agendamentos:
+            data_str = ag.get('data_hora_agendamento') or ag.get('data_hora_hendamento') or ag.get('datas_agendamentos')
+            if not data_str:
+                continue
+            try:
+                # Normaliza string e converte para objeto datetime com timezone
+                dt_evento = datetime.fromisoformat(data_str.replace('Z', '+00:00'))
+                if dt_evento.tzinfo is None:
+                    dt_evento = dt_evento.replace(tzinfo=timezone.utc)
+                
+                # Se o evento ainda vai acontecer
+                if dt_evento > agora:
+                    diferenca = dt_evento - agora
+                    if menor_diferenca is None or diferenca < menor_diferenca:
+                        menor_diferenca = diferenca
+                        proximo_evento = {
+                            "dados": ag,
+                            "datetime": dt_evento,
+                            "tempo_restante": diferenca
+                        }
+            except Exception:
+                continue
+
+        return proximo_evento
+
     def _build_agendamentos_rows(self, agendamentos):
+        ft = self.ft
         if not agendamentos:
             return [
-                self.ft.DataRow(cells=[
-                    self.ft.DataCell(self.ft.Text("Nenhum agendamento cadastrado ainda", color=self.ft.Colors.GREY_500, size=11)),
-                    self.ft.DataCell(self.ft.Text("", color=self.ft.Colors.GREY_500, size=11)),
-                    self.ft.DataCell(self.ft.Text("", color=self.ft.Colors.GREY_500, size=11)),
+                ft.DataRow(cells=[
+                    ft.DataCell(ft.Text("Nenhum agendamento encontrado", color=ft.Colors.GREY_500, size=12, italic=True)),
+                    ft.DataCell(ft.Text("")),
+                    ft.DataCell(ft.Text("")),
                 ])
             ]
 
         rows = []
         for ag in agendamentos:
+            data_banco = ag.get('data_hora_agendamento') or ag.get('data_hora_hendamento') or ag.get('datas_agendamentos')
+            dispositivo = ag.get('id_dispositivos', 'N/A')
+            descricao = ag.get('descricao_livre', '-')
+
             rows.append(
-                self.ft.DataRow(cells=[
-                    self.ft.DataCell(self.ft.Text(self._formatar_timestamp(ag.get('datas_agendamentos')), color=self.ft.Colors.WHITE70, size=11)),
-                    self.ft.DataCell(self.ft.Text(str(ag.get('id_dispositivos', 'N/A')), color=self.ft.Colors.WHITE70, size=11)),
-                    self.ft.DataCell(self.ft.Text(ag.get('descricao_livre', '-'), color=self.ft.Colors.WHITE70, size=11)),
+                ft.DataRow(cells=[
+                    ft.DataCell(
+                        ft.Container(
+                            content=ft.Text(self._formatar_timestamp(data_banco), color=ft.Colors.CYAN_300, weight=ft.FontWeight.W_600, size=12),
+                            padding=ft.padding.all(4)
+                        )
+                    ),
+                    ft.DataCell(
+                        ft.Container(
+                            content=ft.Text(f"ID: {dispositivo}", color=ft.Colors.WHITE80, size=12),
+                            padding=ft.padding.all(4)
+                        )
+                    ),
+                    ft.DataCell(
+                        ft.Container(
+                            content=ft.Text(descricao, color=ft.Colors.GREY_300, size=12),
+                            padding=ft.padding.all(4)
+                        )
+                    ),
                 ])
             )
         return rows
@@ -48,55 +99,68 @@ class CalendarView:
     def _abrir_dialog_novo_agendamento(self, e=None):
         ft = self.ft
         id_dispositivo = self.system.obter_id_dispositivo()
-        self.input_data = ft.TextField(label="Data/Hora (ISO)", hint_text="2026-06-10T14:30:00", width=300)
-        self.input_descricao = ft.TextField(label="Descrição do Teste", width=300)
+        
+        data_atual_exemplo = datetime.now().strftime("%Y-%m-%dT%H:%M:00")
+        self.input_data = ft.TextField(
+            label="Data/Hora do Agendamento", 
+            value=data_atual_exemplo, 
+            hint_text="AAAA-MM-DDTHH:MM:SS", 
+            border_color=ft.Colors.BLUE_400,
+            width=300
+        )
+        self.input_titulo = ft.TextField(label="Título do Agendamento", width=300)
+        self.input_descricao = ft.TextField(label="Descrição Livre", width=300)
         self.input_dispositivo = None
 
         if id_dispositivo is None:
-            self.input_dispositivo = ft.TextField(label="ID do Dispositivo", hint_text="Digite o ID do dispositivo", width=300)
+            self.input_dispositivo = ft.TextField(label="ID do Dispositivo Target", hint_text="Digite o ID numérico", width=300)
 
         def on_submit(_e=None):
             datas = self.input_data.value
-            descricao = self.input_descricao.value or ''
+            titulo = (self.input_titulo.value or '').strip()
+            descricao = (self.input_descricao.value or '').strip()
+            # concatena título e descrição usando ';' conforme especificado
+            descricao_completa = f"{titulo};{descricao}" if titulo else descricao
+
             dispositivo = id_dispositivo
+            
             if dispositivo is None:
                 dispositivo_text = self.input_dispositivo.value if self.input_dispositivo else None
                 if not dispositivo_text:
-                    print('Informe o ID do dispositivo antes de salvar.')
                     return
                 try:
                     dispositivo = int(dispositivo_text)
                 except ValueError:
-                    print('ID de dispositivo inválido.')
                     return
+
+            id_usuario = self.system.obter_id_usuario()
             try:
-                novo = self.system.model.database.cadastrar_agendamento(datas, dispositivo, descricao)
+                novo = self.system.model.database.cadastrar_agendamento(datas, dispositivo, descricao_completa, id_usuario=id_usuario)
                 if novo:
                     dlg.open = False
                     self._refresh_agendamentos()
-                else:
-                    print('Falha ao cadastrar agendamento')
             except Exception as ex:
                 print(f'Erro ao cadastrar agendamento: {ex}')
 
         actions = [
             ft.TextButton("Cancelar", on_click=lambda e: (setattr(dlg, 'open', False), self.system.page.update())),
-            ft.ElevatedButton("Salvar", on_click=on_submit)
+            ft.ElevatedButton("Salvar Registro", bgcolor=ft.Colors.BLUE_500, color=ft.Colors.WHITE, on_click=on_submit)
         ]
 
-        content_controls = [self.input_data, self.input_descricao]
+        content_controls = [self.input_data, self.input_titulo, self.input_descricao]
         if self.input_dispositivo is not None:
             content_controls.append(self.input_dispositivo)
 
         dlg = ft.AlertDialog(
-            title=ft.Text("Agendar Novo Teste", weight=ft.FontWeight.BOLD),
-            content=ft.Column(content_controls, spacing=10),
+            title=ft.Text("Cadastrar Rotina na Tabela", weight=ft.FontWeight.BOLD),
+            content=ft.Column(content_controls, spacing=12, tight=True),
             actions=actions,
             modal=True
         )
-        self.system.page.dialog = dlg
+        page = self.system.page
+        page.dialog = dlg
         dlg.open = True
-        self.system.page.update()
+        page.update()
 
     def _refresh_agendamentos(self):
         if not self.agendamentos_table:
@@ -106,28 +170,59 @@ class CalendarView:
         self.system.page.update()
 
     def render(self):
-        # Paleta de Cores Alinhada
         BG_CARD = "#111827"
         BORDER_COLOR = "#1f2937"
         ACCENT_BLUE = self.ft.Colors.BLUE_400
         ACCENT_PURPLE = self.ft.Colors.PURPLE_400
+        
         agendamentos = self._carregar_agendamentos()
         total_agendamentos = len(agendamentos)
+        
+        # Busca o evento mais próximo dinamicamente
+        evento_proximo_info = self._obter_proximo_evento(agendamentos)
+        
+        if evento_proximo_info:
+            dados_ev = evento_proximo_info["dados"]
+            dt_ev = evento_proximo_info["datetime"]
+            restante = evento_proximo_info["tempo_restante"]
+            
+            # Formata tempo restante de forma amigável (Ex: 2h 14m ou 1 dia, 3h)
+            horas_totais = int(restante.total_seconds() // 3600)
+            minutos_totais = int((restante.total_seconds() % 3600) // 60)
+            
+            if horas_totais >= 24:
+                dias = horas_totais // 24
+                horas_restantes = horas_totais % 24
+                tempo_string = f"Inicia em: {dias}d {horas_restantes}h"
+            else:
+                tempo_string = f"Inicia em: {horas_totais}h {minutos_totais}min"
+                
+            titulo_evento = dados_ev.get('descricao_livre') or "Rotina Operacional Sem Nome"
+            data_evento_formatada = dt_ev.strftime("%d/%m/%Y às %H:%M")
+            id_disp_evento = dados_ev.get('id_dispositivos', 'N/A')
+        else:
+            # Estado Fallback caso não existam agendamentos futuros
+            tempo_string = "Sem eventos futuros"
+            titulo_evento = "Nenhuma rotina agendada na fila"
+            data_evento_formatada = "--/--/---- --:--"
+            id_disp_evento = "N/A"
+
         self.agendamentos_table = self.ft.DataTable(
             border=self.ft.border.all(1, BORDER_COLOR),
             border_radius=10,
             heading_row_color="#1f2937",
+            divider_thickness=1,
+            horizontal_lines=self.ft.border.BorderSide(1, "#1f2937"),
             columns=[
-                self.ft.DataColumn(self.ft.Text("Data Agendada", color=self.ft.Colors.CYAN_400, size=12, weight="bold")),
-                self.ft.DataColumn(self.ft.Text("Dispositivo", color=self.ft.Colors.WHITE, size=12)),
-                self.ft.DataColumn(self.ft.Text("Descrição", color=self.ft.Colors.WHITE, size=12)),
+                self.ft.DataColumn(self.ft.Text("DATA / HORA", color=self.ft.Colors.CYAN_400, size=12, weight="bold")),
+                self.ft.DataColumn(self.ft.Text("DISPOSITIVO", color=self.ft.Colors.WHITE, size=12, weight="bold")),
+                self.ft.DataColumn(self.ft.Text("DESCRIÇÃO LIVRE", color=self.ft.Colors.WHITE, size=12, weight="bold")),
             ],
             rows=self._build_agendamentos_rows(agendamentos),
             bgcolor=BG_CARD,
         )
 
         return self.ft.Column([
-            # CABEÇALHO
             self.ft.Row([
                 self.ft.Column([
                     self.ft.Row([
@@ -136,20 +231,18 @@ class CalendarView:
                     ]),
                     self.ft.Text("Planejamento de rotinas de pista e calibração de sensores", color=self.ft.Colors.GREY_400, size=14)
                 ]),
-                # Botão para agendar nova rotina no banco
                 self.ft.ElevatedButton(
                     text="Agendar Novo Teste",
                     icon=self.ft.Icons.ADD,
                     bgcolor=ACCENT_BLUE,
                     color=self.ft.Colors.BLACK,
                     style=self.ft.ButtonStyle(shape=self.ft.RoundedRectangleBorder(radius=8)),
-                    on_click=self._abrir_dialog_novo_agendamento
+                    on_click=lambda e: self.system.view.page.agendamento(self.system).render()
                 )
             ], alignment=self.ft.MainAxisAlignment.SPACE_BETWEEN),
             
             self.ft.Container(height=20),
             
-            # FILTROS DE VISUALIZAÇÃO RÁPIDA
             self.ft.Row([
                 self.ft.Chip(label=self.ft.Text("Todos os Testes"), selected=True, bgcolor="#1e293b"),
                 self.ft.Chip(label=self.ft.Text("Pendentes")),
@@ -159,9 +252,9 @@ class CalendarView:
             
             self.ft.Container(height=15),
             
-            # CARD DE DESTAQUE: PRÓXIMA MISSÃO (Contagem Regressiva Visual)
+            # --- CARD DESTAQUE DINÂMICO ---
             self.ft.Container(
-                bgcolor="#1e1b4b", # Roxo escuro para destacar
+                bgcolor="#1e1b4b", 
                 padding=25,
                 border_radius=12,
                 border=self.ft.border.all(1, "#312e81"),
@@ -174,34 +267,25 @@ class CalendarView:
                                 padding=self.ft.padding.symmetric(horizontal=8, vertical=4),
                                 border_radius=5
                             ),
-                            self.ft.Text("Inicia em: 11h 45min", color=self.ft.Colors.GREY_300, size=13, weight=self.ft.FontWeight.W_500)
+                            self.ft.Text(tempo_string, color=self.ft.Colors.GREY_300, size=13, weight=self.ft.FontWeight.W_500)
                         ], spacing=15),
                         self.ft.Container(height=5),
-                        self.ft.Text("Varredura de Perímetro e Coleta de Latência", size=22, weight=self.ft.FontWeight.BOLD, color=self.ft.Colors.WHITE),
+                        self.ft.Text(titulo_evento, size=22, weight=self.ft.FontWeight.BOLD, color=self.ft.Colors.WHITE),
                         self.ft.Row([
                             self.ft.Icon(self.ft.Icons.LOCATION_ON, color=self.ft.Colors.GREY_400, size=16),
-                            self.ft.Text("Circuito de Testes - Bloco B", color=self.ft.Colors.GREY_400, size=14),
+                            self.ft.Text("Circuito de Testes", color=self.ft.Colors.GREY_400, size=14),
                             self.ft.Container(width=10),
                             self.ft.Icon(self.ft.Icons.ACCESS_TIME, color=self.ft.Colors.GREY_400, size=16),
-                            self.ft.Text("Amanhã, às 08:30 AM", color=self.ft.Colors.GREY_400, size=14),
+                            self.ft.Text(data_evento_formatada, color=self.ft.Colors.GREY_400, size=14),
                         ])
                     ], expand=True),
                     
-                    # Sensores Alvo desse teste especificamente
                     self.ft.Column([
-                        self.ft.Text("Sensores Avaliados", size=12, color=self.ft.Colors.GREY_400, weight=self.ft.FontWeight.BOLD),
+                        self.ft.Text("Dispositivo Target", size=12, color=self.ft.Colors.GREY_400, weight=self.ft.FontWeight.BOLD),
                         self.ft.Row([
                             self.ft.Container(
-                                content=self.ft.Text("Ultra_01", size=11, color=self.ft.Colors.WHITE),
-                                bgcolor="#1f2937",
-                                padding=self.ft.padding.symmetric(horizontal=8, vertical=4),
-                                border_radius=4
-                            ),
-                            self.ft.Container(
-                                content=self.ft.Text("Infra_L", size=11, color=self.ft.Colors.WHITE),
-                                bgcolor="#1f2937",
-                                padding=self.ft.padding.symmetric(horizontal=8, vertical=4),
-                                border_radius=4
+                                content=self.ft.Text(f"ID: {id_disp_evento}", size=11, color=self.ft.Colors.WHITE),
+                                bgcolor="#1f2937", padding=self.ft.padding.symmetric(horizontal=8, vertical=4), border_radius=4
                             ),
                         ], spacing=5)
                     ], alignment=self.ft.MainAxisAlignment.CENTER, horizontal_alignment=self.ft.CrossAxisAlignment.END)
@@ -212,93 +296,14 @@ class CalendarView:
             self.ft.Text("Linha do Tempo / Próximos Dias", size=18, weight=self.ft.FontWeight.BOLD, color=self.ft.Colors.WHITE),
             self.ft.Container(height=10),
             
-            # LINHA DO TEMPO (LISTA DE EVENTOS FUTUROS)
-            self.ft.Column([
-                self.build_timeline_item(
-                    date="28 MAI",
-                    title="Teste de Stress: Autonomia de Bateria",
-                    local="Laboratório de Robótica",
-                    sensors=["Todos os Sensores", "Motores"],
-                    type_color=self.ft.Colors.RED_ACCENT_400,
-                    type_label="STRESS TEST",
-                    ft=self.ft, bg_card=BG_CARD, border_color=BORDER_COLOR
-                ),
-                self.build_timeline_item(
-                    date="30 MAI",
-                    title="Calibração do Sensor de Linha (Infra_R / Infra_L)",
-                    local="Pista de Testes Metálica",
-                    sensors=["Infra_R", "Infra_L"],
-                    type_color=self.ft.Colors.GREEN_400,
-                    type_label="CALIBRAÇÃO",
-                    ft=self.ft, bg_card=BG_CARD, border_color=BORDER_COLOR
-                ),
-                self.build_timeline_item(
-                    date="02 JUN",
-                    title="Simulação de Perda de Sinal Supabase (Modo Offline)",
-                    local="Área Externa - Bloco A",
-                    sensors=["Módulo Wi-Fi", "Cache SQLite"],
-                    type_color=self.ft.Colors.CYAN_400,
-                    type_label="SOFTWARE",
-                    ft=self.ft, bg_card=BG_CARD, border_color=BORDER_COLOR
-                ),
-            ], spacing=12, scroll=self.ft.ScrollMode.AUTO, expand=True),
-            
-            self.ft.Container(height=20),
+            self.ft.Container(height=15),
             self.ft.Row([
                 self.ft.Column([
-                    self.ft.Text("Agendamentos no Banco", size=18, weight=self.ft.FontWeight.BOLD, color=self.ft.Colors.WHITE),
-                    self.ft.Text(f"{total_agendamentos} agendamento(s) encontrados", color=self.ft.Colors.GREY_400, size=12)
+                    self.ft.Text("Agendamentos no Banco (Tabela)", size=18, weight=self.ft.FontWeight.BOLD, color=self.ft.Colors.WHITE),
+                    self.ft.Text(f"{total_agendamentos} registro(s) sincronizados", color=self.ft.Colors.GREY_400, size=12)
                 ]),
             ], alignment=self.ft.MainAxisAlignment.SPACE_BETWEEN),
             self.ft.Container(height=10),
+            
             self.agendamentos_table
         ], expand=True, scroll=self.ft.ScrollMode.AUTO)
-
-    def build_timeline_item(self, date, title, local, sensors, type_color, type_label, ft, bg_card, border_color):
-        return ft.Container(
-            bgcolor=bg_card,
-            padding=15,
-            border_radius=10,
-            border=ft.border.all(1, border_color),
-            content=ft.Row([
-                # Bloco de Data Lateral Esquerdo
-                ft.Container(
-                    width=70,
-                    alignment=ft.alignment.center,
-                    content=ft.Column([
-                        ft.Text(date.split()[0], size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
-                        ft.Text(date.split()[1], size=12, color=ft.Colors.GREY_400, weight=ft.FontWeight.W_500),
-                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=0)
-                ),
-                ft.VerticalDivider(color="#1f2937"),
-                
-                # Detalhes do Evento
-                ft.Container(
-                    expand=True,
-                    content=ft.Column([
-                        ft.Row([
-                            ft.Text(title, size=15, weight=ft.FontWeight.W_600, color=ft.Colors.WHITE),
-                            # Badge de Categoria Dinâmico
-                            ft.Container(
-                                content=ft.Text(type_label, size=9, weight=ft.FontWeight.BOLD, color=type_color),
-                                border=ft.border.all(1, type_color),
-                                padding=ft.padding.symmetric(horizontal=6, vertical=2),
-                                border_radius=4
-                            )
-                        ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                        ft.Container(height=2),
-                        ft.Row([
-                            ft.Icon(ft.Icons.PLACE, size=14, color=ft.Colors.GREY_500),
-                            ft.Text(local, size=13, color=ft.Colors.GREY_500),
-                            ft.Container(width=15),
-                            ft.Icon(ft.Icons.MEMORY, size=14, color=ft.Colors.GREY_500),
-                            ft.Text(f"Foco: {', '.join(sensors)}", size=13, color=ft.Colors.GREY_500),
-                        ])
-                    ], spacing=4)
-                ),
-                
-                # Ações rápidas para o agendamento
-                ft.IconButton(icon=ft.Icons.EDIT_CALENDAR_ROUNDED, icon_color=ft.Colors.GREY_400, tooltip="Modificar parâmetros"),
-                ft.IconButton(icon=ft.Icons.DELETE_OUTLINE, icon_color=ft.Colors.RED_400, tooltip="Cancelar Teste")
-            ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
-        )

@@ -10,6 +10,7 @@ from view.pages.homeView import HomeView
 from view.pages.settingsView import SettingView
 from view.pages.cadastroView import CadastroView
 from view.pages.cadastroCarrinhoView import CadastroCarrinhoView
+from view.pages.agendamentoTesteView import AgendamentoTesteView
 
     # Elements the Appbar 
 from view.pages.elementstheappbar.dashboardView import DashboardView
@@ -83,53 +84,55 @@ def main(page: ft.Page):
     page.padding = 0
 
 
+    main_window = MainWindow(
+        HomeView,
+        LoginView,
+        ProfileSelectionView,
+        SettingView,
+        CadastroView,
+        CadastroCarrinhoView,
+        AgendamentoTesteView,
+        MainElementsAppbar(
+            DashboardView,
+            NotificationsView,
+            SpeedView,
+            CalendarView,
+            EventsView,
+            SettingsView,
+            InventoryView
+        ),
+    )
+
     CreateApp(
         System(
-        page,
-        ft,
-        time,
-        MainView( 
-            MainWindow(
-                HomeView, 
-                LoginView,
-                ProfileSelectionView,
-                SettingView,
-                CadastroView,
-                CadastroCarrinhoView,
-                MainElementsAppbar(
-                    DashboardView,
-                    NotificationsView,
-                    SpeedView,
-                    CalendarView,
-                    EventsView,
-                    SettingsView,
-                    InventoryView
-                ),
+            page,
+            ft,
+            time,
+            MainView(
+                main_window,
+                MainAnimate(
+                    AnimationButton,
+                    AnimationPage
+                )
             ),
-            
-            MainAnimate(
-                AnimationButton,
-                AnimationPage
-    
-            )
-        ),
-        MainModel(
-            Database(),
-            CategoriaModel,
-            ItemModel,
-            FormatModel,
-            UsuarioModel,
-        ),
-        MainTest(
-            TestApi,
-            TestController,
-            TestModel,
-            TestView
-        ),
-        "Controller",
-        AppServices
+            MainModel(
+                Database(),
+                CategoriaModel,
+                ItemModel,
+                FormatModel,
+                UsuarioModel,
+            ),
+            MainTest(
+                TestApi,
+                TestController,
+                TestModel,
+                TestView
+            ),
+            "Controller",
+            AppServices
         )
-        )
+    )
+
 """
     # Funções de Roteamento (Avançar as telas)
     def ir_para_dashboard(nome_carrinho):

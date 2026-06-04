@@ -70,14 +70,18 @@ class EventsView:
         """Abre diálogo para registrar novo agendamento."""
         ft = self.ft
         self.input_data = ft.TextField(label="Data/Hora (ISO)", hint_text="2026-06-10T14:30:00", width=300)
+        self.input_titulo = ft.TextField(label="Título", width=300)
         self.input_descricao = ft.TextField(label="Descrição", width=300)
 
         def on_submit(_e=None):
             datas = self.input_data.value
-            descricao = self.input_descricao.value or ''
+            titulo = (self.input_titulo.value or '').strip()
+            descricao = (self.input_descricao.value or '').strip()
+            descricao_completa = f"{titulo};{descricao}" if titulo else descricao
             id_dispositivo = self.system.obter_id_dispositivo() or None
+            id_usuario = self.system.obter_id_usuario()
             try:
-                novo = self.system.model.database.cadastrar_agendamento(datas, id_dispositivo, descricao)
+                novo = self.system.model.database.cadastrar_agendamento(datas, id_dispositivo, descricao_completa, id_usuario=id_usuario)
                 if novo:
                     dlg.open = False
                     self.system.page.update()
@@ -94,7 +98,7 @@ class EventsView:
 
         dlg = ft.AlertDialog(
             title=ft.Text("Novo Agendamento", weight=ft.FontWeight.BOLD),
-            content=ft.Column([self.input_data, self.input_descricao], spacing=10),
+            content=ft.Column([self.input_data, self.input_titulo, self.input_descricao], spacing=10),
             actions=actions,
             modal=True
         )
