@@ -53,7 +53,8 @@ class LoginView:
             
             if usuario:
                 # Armazena o usuário no sistema
-                self.system.usuario_model.definir_usuario(usuario)
+                
+                self.system.model.usuario_model().definir_usuario(usuario)
                 
                 # Redireciona para seleção de perfil
                 self.system.view.animate.animacaoPagina.animar_tela(self.system, self.on_login_success)
