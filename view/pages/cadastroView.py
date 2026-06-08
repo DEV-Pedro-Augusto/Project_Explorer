@@ -23,22 +23,61 @@ class CadastroView:
             self.on_back_to_login(self.system).render()
 
         def handle_register(e):
-            # Aqui entraria a lógica de validação de senha, salvar no banco, etc.
-         
-            
-            # Simulando sucesso e voltando para o login
-            dlg = self.ft.AlertDialog(
-                title=self.ft.Text("Cadastro Realizado", weight=self.ft.FontWeight.BOLD, color=self.ft.Colors.GREEN_400),
-                content=self.ft.Text("Sua conta foi criada com sucesso! Faça o login para continuar."),
-                actions=[
-                    self.ft.TextButton("Ir para Login", on_click=lambda e: (fechar_popup(dlg), self.on_register_success(self.system).render()))
-                ],
-                shape=self.ft.RoundedRectangleBorder(radius=15),
-                bgcolor="#15171E"
+
+    nome = input_nome.value.strip()
+    email = input_email.value.strip()
+    senha = input_senha.value
+    confirmar = input_confirma_senha.value
+
+    if not nome or not email or not senha or not confirmar:
+        print("Preencha todos os campos")
+        return
+
+    if senha != confirmar:
+        print("As senhas não coincidem")
+        return
+
+    resultado = Database().cadastrar_usuario(
+        nome,
+        email,
+        senha
+    )
+
+    if resultado == "EMAIL_EXISTE":
+        print("E-mail já cadastrado")
+        return
+
+    if not resultado:
+        print("Erro ao cadastrar usuário")
+        return
+
+    self.system.usuario_model.definir_usuario(resultado)
+
+    dlg = self.ft.AlertDialog(
+        title=self.ft.Text(
+            "Cadastro Realizado",
+            weight=self.ft.FontWeight.BOLD,
+            color=self.ft.Colors.GREEN_400
+        ),
+        content=self.ft.Text(
+            "Sua conta foi criada com sucesso!"
+        ),
+        actions=[
+            self.ft.TextButton(
+                "Ir para Login",
+                on_click=lambda e: (
+                    fechar_popup(dlg),
+                    self.on_register_success(self.system).render()
+                )
             )
-            self.system.page.dialog = dlg
-            dlg.open = True
-            self.system.page.update()
+        ],
+        shape=self.ft.RoundedRectangleBorder(radius=15),
+        bgcolor="#15171E"
+    )
+
+    self.system.page.dialog = dlg
+    dlg.open = True
+    self.system.page.update()
 
 
         # --- CONSTRUÇÃO DA UI (LADO ESQUERDO) ---

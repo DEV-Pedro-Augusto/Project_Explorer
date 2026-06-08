@@ -128,4 +128,40 @@ class Database:
         
         print(f"Exibindo Dados do Sensor {id_sensor}: {dados}")
         return dados
->>>>>>> Stashed changes
+    def cadastrar_usuario(self, nome: str, email: str, senha: str):
+    """Cadastra um novo usuário."""
+
+    if not self.client:
+        return False
+
+    try:
+        usuario_existente = self.client.table("usuarios").select(
+            "id_usuarios"
+        ).eq(
+            "emails_usuarios",
+            email
+        ).execute()
+
+        if usuario_existente.data:
+            return "EMAIL_EXISTE"
+
+        resposta_usuario = self.client.table("usuarios").insert({
+            "nomes_usuarios": nome,
+            "emails_usuarios": email
+        }).execute()
+
+        usuario = resposta_usuario.data[0]
+        id_usuario = usuario["id_usuarios"]
+
+        self.client.table("logins").insert({
+            "id_usuarios": id_usuario,
+            "nomes_logins": email,
+            "senhas_logins": senha
+        }).execute()
+
+        return usuario
+
+    except Exception as e:
+        print(f"Erro ao cadastrar usuário: {e}")
+        return False
+
