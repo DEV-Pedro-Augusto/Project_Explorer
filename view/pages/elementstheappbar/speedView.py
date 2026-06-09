@@ -137,9 +137,28 @@ class SpeedView:
         controls = []
         for leitura, mensagem in self.anomalies:
             timestamp = self._format_datetime(leitura.get("data_hora"))
-            sensor = leitura.get("id_etiquetas_sensores", "Desconhecido")
-            controls.append(self.create_anomaly_item(timestamp, sensor, mensagem, self.ft.Colors.RED_ACCENT_400))
+            sensor_id = leitura.get("id_etiquetas_sensores", "Desconhecido")
+            sensor_nome = self._get_sensor_name(sensor_id)
+            controls.append(self.create_anomaly_item(timestamp, sensor_id, sensor_nome, mensagem, self.ft.Colors.RED_ACCENT_400))
         return controls
+
+    def _get_sensor_name(self, sensor_id):
+        """Retorna o nome do sensor baseado no ID da etiqueta"""
+        mapeamento_sensores = {
+            1: "MQ2 (PPM)",
+            2: "MQ2 (LEL %)",
+            3: "MQ3 (PPM)",
+            4: "MQ3 (mg/L)",
+            5: "MQ7 (PPM)",
+            6: "MQ7 (COHB %)",
+            7: "Tempo de Volta",
+            8: "Distância Total",
+            9: "Sensor Frente",
+            10: "Sensor Direita",
+            11: "Sensor Esquerda",
+            12: "Sensor Traseira",
+        }
+        return mapeamento_sensores.get(sensor_id, f"Sensor {sensor_id}")
 
     def _build_log_summary(self):
         if not self.leituras:
@@ -261,19 +280,20 @@ class SpeedView:
                         
                         # --- MODIFICADO: Agora exibe o LineChart de verdade em vez do texto fixo ---
                         self.ft.Container(
-                            height=200,
+                            height=300,
                             padding=15,
                             bgcolor="#1f2937",
                             border_radius=8,
-                            content=self.chart
+                            content=self.chart,
+                            expand=True
                         ),
                         
-                        self.ft.Container(height=10),
+                        self.ft.Container(height=12),
                         self.ft.Row([
                             self.ft.Row([self.ft.Container(width=12, height=12, bgcolor=self.ft.Colors.CYAN_400, border_radius=3), self.ft.Text("Leitura Única", size=12)]),
                             self.ft.Row([self.ft.Container(width=12, height=12, bgcolor=self.ft.Colors.AMBER_500, border_radius=3), self.ft.Text("Sinal de Anomalia", size=12)])
                         ], spacing=20)
-                    ])
+                    ], expand=True)
                 ),
                 self.ft.Container(
                     col={"sm": 12, "md": 4},
@@ -282,8 +302,8 @@ class SpeedView:
                         self.ft.Text("Alertas de Anomalias", size=16, weight=self.ft.FontWeight.BOLD, color=self.ft.Colors.WHITE),
                         self.ft.Text("Anomalias extraídas dos dados reais de leituras.", size=12, color=self.ft.Colors.GREY_400),
                         self.ft.Container(height=5),
-                        self.anomaly_column
-                    ])
+                        self.ft.Container(expand=True, content=self.anomaly_column)
+                    ], expand=True)
                 )
             ], spacing=15),
 
@@ -415,14 +435,30 @@ class SpeedView:
 
         return self.page_container
 
-    def create_anomaly_item(self, timestamp, sensor, msg, icon_color):
+    def create_anomaly_item(self, timestamp, sensor_id, sensor_nome, msg, icon_color):
         return self.ft.Container(
-            padding=10, bgcolor="#1f2937", border_radius=6,
+            padding=14,
+            bgcolor="#1a1f35",
+            border_radius=10,
+            border=self.ft.border.all(2, "#dc2626"),
+            shadow=self.ft.BoxShadow(blur_radius=8, color=self.ft.Colors.with_opacity(0.3, "#dc2626")),
             content=self.ft.Row([
-                self.ft.Icon(self.ft.Icons.REPORT_PROBLEM_ROUNDED, color=icon_color, size=18),
+                self.ft.Container(
+                    content=self.ft.Icon(self.ft.Icons.WARNING_ROUNDED, color=icon_color, size=24),
+                    width=40,
+                    height=40,
+                    border_radius=50,
+                    bgcolor=self.ft.Colors.with_opacity(0.1, icon_color),
+                    alignment=self.ft.alignment.center
+                ),
                 self.ft.Column([
-                    self.ft.Text(f"[{timestamp}] - Sensor: {sensor}", size=11, color=self.ft.Colors.GREY_400),
-                    self.ft.Text(msg, size=13, weight=self.ft.FontWeight.W_500, color=self.ft.Colors.WHITE)
-                ], spacing=2)
-            ])
+                    self.ft.Row([
+                        self.ft.Text(f"[{timestamp}]", size=10, color=self.ft.Colors.GREY_500, weight=self.ft.FontWeight.W_500),
+                        self.ft.Text("•", size=12, color=self.ft.Colors.GREY_600),
+                        self.ft.Text(sensor_nome, size=11, color=self.ft.Colors.ORANGE_400, weight=self.ft.FontWeight.BOLD),
+                    ], spacing=6, alignment=self.ft.MainAxisAlignment.START),
+                    self.ft.Container(height=2),
+                    self.ft.Text(msg, size=12, weight=self.ft.FontWeight.W_500, color=self.ft.Colors.WHITE, selectable=True)
+                ], spacing=4, expand=True)
+            ], spacing=12, alignment=self.ft.MainAxisAlignment.START)
         )

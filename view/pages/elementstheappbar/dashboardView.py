@@ -125,6 +125,98 @@ class DashboardView:
             print(f"Erro ao carregar leituras do dashboard: {e}")
             return []
 
+    def _carregar_dados_consolidados(self):
+        """Carrega dados consolidados das etiquetas de sensores"""
+        try:
+            id_dispositivo = self.system.obter_id_dispositivo()
+            if not id_dispositivo:
+                return []
+            
+            # Carrega as leituras do dispositivo
+            leituras = self.system.model.database.listar_leituras(id_dispositivo=id_dispositivo)
+            
+            if not leituras:
+                return []
+            
+            # Mapeamento inverso de etiquetas
+            mapeamento_reverso = {
+                1: {"nome": "MQ2 (PPM)", "unidade": "PPM"},
+                2: {"nome": "MQ2 (LEL %)", "unidade": "%"},
+                3: {"nome": "MQ3 (PPM)", "unidade": "PPM"},
+                4: {"nome": "MQ3 (mg/L)", "unidade": "MG/L"},
+                5: {"nome": "MQ7 (PPM)", "unidade": "PPM"},
+                6: {"nome": "MQ7 (COHB %)", "unidade": "%"},
+                7: {"nome": "Tempo de Volta", "unidade": "S"},
+                8: {"nome": "Distância Total", "unidade": "M"},
+                9: {"nome": "Sensor Frente", "unidade": "CM"},
+                10: {"nome": "Sensor Direita", "unidade": "CM"},
+                11: {"nome": "Sensor Esquerda", "unidade": "CM"},
+                12: {"nome": "Sensor Traseira", "unidade": "CM"},
+            }
+            
+            # Mapeamento de ícones
+            mapeamento_icones = {
+                "mq2": {"icon": self.ft.Icons.CLOUD, "color": self.ft.Colors.GREEN_400},
+                "mq3": {"icon": self.ft.Icons.LOCAL_DRINK, "color": self.ft.Colors.YELLOW_700},
+                "mq7": {"icon": self.ft.Icons.SMOKE_FREE, "color": self.ft.Colors.RED_500},
+                "mocr": {"icon": self.ft.Icons.OPACITY, "color": self.ft.Colors.ORANGE_400},
+                "hc-sr": {"icon": self.ft.Icons.STRAIGHTEN, "color": self.ft.Colors.BLUE_400},
+                "tempo": {"icon": self.ft.Icons.SCHEDULE, "color": self.ft.Colors.PURPLE_400},
+                "distancia": {"icon": self.ft.Icons.STRAIGHTEN, "color": self.ft.Colors.BLUE_300},
+            }
+            
+            # Agrupa por etiqueta e calcula a média
+            dados_consolidados = {}
+            for leitura in leituras:
+                id_etiqueta = leitura.get('id_etiquetas_sensores')
+                valor = leitura.get('valores_lidos')
+                
+                if id_etiqueta and valor is not None:
+                    try:
+                        valor_num = float(valor)
+                        if id_etiqueta not in dados_consolidados:
+                            dados_consolidados[id_etiqueta] = {'valores': []}
+                        dados_consolidados[id_etiqueta]['valores'].append(valor_num)
+                    except Exception:
+                        pass
+            
+            # Calcula a média e prepara os dados
+            resultado = []
+            
+            for id_etiqueta, dados in dados_consolidados.items():
+                if dados['valores']:
+                    media = sum(dados['valores']) / len(dados['valores'])
+                    
+                    # Busca info da etiqueta no mapeamento
+                    info_etiqueta = mapeamento_reverso.get(id_etiqueta, {})
+                    nome = info_etiqueta.get('nome', f'Etiqueta {id_etiqueta}')
+                    unidade = info_etiqueta.get('unidade', '')
+                    
+                    # Encontra o ícone apropriado
+                    icon_info = None
+                    nome_lower = nome.lower()
+                    for chave, info in mapeamento_icones.items():
+                        if chave in nome_lower:
+                            icon_info = info
+                            break
+                    
+                    if not icon_info:
+                        icon_info = {"icon": self.ft.Icons.SENSORS_OUTLINED, "color": self.ft.Colors.BLUE_300}
+                    
+                    resultado.append({
+                        'id': id_etiqueta,
+                        'nome': nome[:25],
+                        'valor': f"{media:.2f}",
+                        'unidade': unidade,
+                        'icon': icon_info['icon'],
+                        'color': icon_info['color']
+                    })
+            
+            return resultado
+        except Exception as e:
+            print(f"Erro ao carregar dados consolidados: {e}")
+            return []
+
     def _build_sensor_badges(self, leituras):
         latest_by_sensor = {}
         for leitura in leituras:
@@ -262,6 +354,98 @@ class DashboardView:
             ]))
         return rows
 
+    def _build_pie_chart(self, leituras):
+        """Gráfico de pizza mostrando distribuição de sensores"""
+        if not leituras:
+            return self.ft.Text("Aguardando dados...", color=self.ft.Colors.GREY_500, size=12)
+
+        # Mapeamento de etiquetas
+        mapeamento_sensores = {
+            1: "MQ2 (PPM)",
+            2: "MQ2 (LEL %)",
+            3: "MQ3 (PPM)",
+            4: "MQ3 (mg/L)",
+            5: "MQ7 (PPM)",
+            6: "MQ7 (COHB %)",
+            7: "Tempo de Volta",
+            8: "Distância Total",
+            9: "Sensor Frente",
+            10: "Sensor Direita",
+            11: "Sensor Esquerda",
+            12: "Sensor Traseira",
+        }
+
+        sensor_counts = {}
+        for l in leituras:
+            sensor_id = l.get('id_etiquetas_sensores', 'Sensor')
+            sensor_counts[sensor_id] = sensor_counts.get(sensor_id, 0) + 1
+
+        if not sensor_counts:
+            return self.ft.Text("Sem dados de sensores", color=self.ft.Colors.GREY_500, size=12)
+
+        pie_sections = []
+        colors = [
+            self.ft.Colors.CYAN_400,
+            self.ft.Colors.GREEN_400,
+            self.ft.Colors.ORANGE_400,
+            self.ft.Colors.RED_400,
+            self.ft.Colors.PURPLE_400,
+            self.ft.Colors.BLUE_400,
+        ]
+        
+        for idx, (sensor_id, count) in enumerate(list(sensor_counts.items())[:6]):
+            sensor_nome = mapeamento_sensores.get(sensor_id, f"Sensor {sensor_id}")
+            pie_sections.append(
+                self.ft.PieChartSection(
+                    value=count,
+                    title=f"{sensor_nome}\n({count})",
+                    title_style=self.ft.TextStyle(color=self.ft.Colors.WHITE, size=12, weight=self.ft.FontWeight.BOLD),
+                    color=colors[idx % len(colors)],
+                )
+            )
+
+        return self.ft.PieChart(sections=pie_sections, expand=True)
+
+    def _build_max_min_chart(self, leituras):
+        """Gráfico mostrando máximo e mínimo de cada sensor"""
+        if not leituras:
+            return self.ft.Text("Aguardando dados...", color=self.ft.Colors.GREY_500, size=12)
+
+        sensor_stats = {}
+        for l in leituras:
+            sensor_id = l.get('id_etiquetas_sensores', 'Sensor')
+            try:
+                valor = float(l.get('valores_lidos', 0))
+                if sensor_id not in sensor_stats:
+                    sensor_stats[sensor_id] = {'max': valor, 'min': valor, 'count': 0}
+                else:
+                    sensor_stats[sensor_id]['max'] = max(sensor_stats[sensor_id]['max'], valor)
+                    sensor_stats[sensor_id]['min'] = min(sensor_stats[sensor_id]['min'], valor)
+                sensor_stats[sensor_id]['count'] += 1
+            except ValueError:
+                continue
+
+        if not sensor_stats:
+            return self.ft.Text("Sem dados válidos", color=self.ft.Colors.GREY_500, size=12)
+
+        bar_groups = []
+        for idx, (sensor, stats) in enumerate(list(sensor_stats.items())[:4]):
+            bar_groups.append(
+                self.ft.BarChartGroup(
+                    x=idx,
+                    bar_rods=[
+                        self.ft.BarChartRod(from_y=0, to_y=stats['max'], width=8, color=self.ft.Colors.RED_400, border_radius=2),
+                        self.ft.BarChartRod(from_y=0, to_y=stats['min'], width=8, color=self.ft.Colors.GREEN_400, border_radius=2),
+                    ]
+                )
+            )
+
+        return self.ft.BarChart(
+            bar_groups=bar_groups,
+            border=self.ft.border.all(1, "#1E293B"),
+            expand=True
+        )
+
     def render(self):
         BG_CARD = "#111827"
         BORDER_COLOR = "#1f2937"
@@ -298,6 +482,45 @@ class DashboardView:
             )
         ], alignment=self.ft.MainAxisAlignment.SPACE_BETWEEN)
 
+        # 1.5 PAINEL DE DADOS CONSOLIDADOS DOS SENSORES
+        dados_consolidados = self._carregar_dados_consolidados()
+        cards_sensores_consolidados = []
+        for dado in dados_consolidados:
+            card_sensor = self.ft.Container(
+                content=self.ft.Column([
+                    self.ft.Row([
+                        self.ft.Icon(dado['icon'], color=dado['color'], size=28),
+                        self.ft.Text(f"{dado['valor']}", size=18, weight=self.ft.FontWeight.BOLD, color=self.ft.Colors.WHITE)
+                    ], alignment=self.ft.MainAxisAlignment.CENTER, spacing=8),
+                    self.ft.Container(height=4),
+                    self.ft.Text(f"{dado['nome'][:20]}", size=10, color=self.ft.Colors.GREY_400, text_align=self.ft.TextAlign.CENTER),
+                    self.ft.Text(f"{dado['unidade']}", size=8, color=self.ft.Colors.GREY_500, text_align=self.ft.TextAlign.CENTER)
+                ], horizontal_alignment=self.ft.CrossAxisAlignment.CENTER, alignment=self.ft.MainAxisAlignment.CENTER),
+                width=120,
+                height=110,
+                padding=10,
+                bgcolor="#141E30",
+                border=self.ft.border.all(1, "#243B55"),
+                border_radius=10
+            )
+            cards_sensores_consolidados.append(card_sensor)
+        
+        painel_dados_consolidados = self.ft.Container(
+            content=self.ft.Column([
+                self.ft.Text("Dados Consolidados dos Sensores", size=14, weight=self.ft.FontWeight.BOLD, color=self.ft.Colors.WHITE),
+                self.ft.Container(height=8),
+                self.ft.Row(
+                    cards_sensores_consolidados or [self.ft.Text("Nenhum dado disponível", color=self.ft.Colors.GREY_500)],
+                    scroll=self.ft.ScrollMode.AUTO,
+                    spacing=10
+                )
+            ], spacing=8),
+            padding=15,
+            bgcolor="#0B132B",
+            border_radius=10,
+            border=self.ft.border.all(1, "#1E293B")
+        ) if cards_sensores_consolidados else self.ft.Container()
+
         # 2. Seção Superior
         session_info_card = self.ft.Container(
             content=self.ft.Column([
@@ -315,23 +538,7 @@ class DashboardView:
             expand=3
         )
 
-        # CORREÇÃO: Mudado de Row para Row com wrap=True. 
-        # Isso impede que os sensores que passem do limite horizontal sumam do painel.
-        # CORREÇÃO DE LAYOUT: Substituído ft.Row por ft.GridView para organizar em colunas
-        sensors_row = self.ft.Container(
-            content=self.ft.GridView(
-                controls=self._build_sensor_badges(leituras),
-                runs_count=4,  # Força a exibição em 4 colunas (mude para 3 ou 5 se preferir)
-                max_extent=160, # Largura máxima de cada card de sensor
-                spacing=10,
-                run_spacing=10,
-                expand=True
-            ),
-            height=180, # Limita a altura máxima para alinhar com o card da esquerda
-            expand=7 
-        )
-
-        top_section = self.ft.Row([session_info_card, sensors_row], spacing=20, vertical_alignment=self.ft.CrossAxisAlignment.START)
+        top_section = self.ft.Row([session_info_card], spacing=20, vertical_alignment=self.ft.CrossAxisAlignment.START, expand=True)
 
         # 3. Linha do Meio
         def create_info_card(title, value, icon_name=None, highlight=False):
@@ -361,9 +568,9 @@ class DashboardView:
         charts_row_1 = self.ft.Row([
             self.ft.Container(
                 content=self.ft.Column([
-                    self.ft.Text("Variação Temporal de Leituras (Linha)", color=self.ft.Colors.WHITE, size=14, weight=self.ft.FontWeight.W_500),
+                    self.ft.Text("Máximos e Mínimos por Sensor", color=self.ft.Colors.WHITE, size=14, weight=self.ft.FontWeight.W_500),
                     self.ft.Container(height=5),
-                    self._build_line_chart(leituras),
+                    self._build_max_min_chart(leituras),
                 ]),
                 bgcolor=BG_CARD, padding=20, border_radius=10, border=self.ft.border.all(1, "#1E293B"), height=220, expand=1
             ),
@@ -376,6 +583,30 @@ class DashboardView:
                 bgcolor=BG_CARD, padding=20, border_radius=10, border=self.ft.border.all(1, "#1E293B"), height=220, expand=1
             )
         ], spacing=20)
+
+        # 5. SEGUNDA LINHA DE GRÁFICOS (Aumentados para melhor legibilidade)
+        charts_row_2 = self.ft.Column([
+            self.ft.Row([
+                self.ft.Container(
+                    content=self.ft.Column([
+                        self.ft.Text("Distribuição de Sensores (Pizza)", color=self.ft.Colors.WHITE, size=15, weight=self.ft.FontWeight.BOLD),
+                        self.ft.Container(height=8),
+                        self._build_pie_chart(leituras),
+                    ]),
+                    bgcolor=BG_CARD, padding=20, border_radius=10, border=self.ft.border.all(1, "#1E293B"), height=350, expand=1
+                ),
+            ], spacing=20),
+            self.ft.Row([
+                self.ft.Container(
+                    content=self.ft.Column([
+                        self.ft.Text("Variação Temporal de Leituras (Linha)", color=self.ft.Colors.WHITE, size=15, weight=self.ft.FontWeight.BOLD),
+                        self.ft.Container(height=8),
+                        self._build_line_chart(leituras),
+                    ]),
+                    bgcolor=BG_CARD, padding=20, border_radius=10, border=self.ft.border.all(1, "#1E293B"), height=280, expand=1
+                )
+            ], spacing=20)
+        ], spacing=15)
 
         # Tabela de Histórico
         readings_table = self.ft.DataTable(
@@ -400,11 +631,15 @@ class DashboardView:
         area_dashboard = self.ft.Column([
             header,
             self.ft.Container(height=10),
+            painel_dados_consolidados,
+            self.ft.Container(height=10),
             top_section,
             self.ft.Container(height=10),
             status_row,
             self.ft.Container(height=10),
             charts_row_1,
+            self.ft.Container(height=15),
+            charts_row_2,
             self.ft.Container(height=15),
             self.ft.Text("Registros de Telemetria Recentes", size=16, weight=self.ft.FontWeight.BOLD, color=self.ft.Colors.WHITE),
             self.ft.Container(height=5),
