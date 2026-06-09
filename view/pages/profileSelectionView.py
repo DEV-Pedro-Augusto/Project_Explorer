@@ -216,34 +216,12 @@ class ProfileSelectionView:
                 password=True, can_reveal_password=True, prefix_icon=ft.Icons.LOCK_OUTLINE
             )
 
-            # Seletor de Tema
-            texto_tema = ft.Text("Tema Básico do App", color=ft.Colors.GREY_400, size=14)
-            
-            def criar_botao_tema(nome, icone, cor_ativa):
-                return ft.Container(
-                    content=ft.Row([ft.Icon(icone, size=18, color=ft.Colors.WHITE), ft.Text(nome, color=ft.Colors.WHITE)]),
-                    padding=ft.padding.symmetric(horizontal=20, vertical=10),
-                    border_radius=20,
-                    bgcolor=cor_ativa,
-                    ink=True,
-                    on_click=lambda e: print(f"Tema {nome} selecionado!")
-                )
-
-            paleta_temas = ft.Row([
-                criar_botao_tema("Escuro", ft.Icons.DARK_MODE, "#2A2A35"), # Tema ativo (exemplo)
-                criar_botao_tema("Claro", ft.Icons.LIGHT_MODE, ft.Colors.TRANSPARENT)
-            ], spacing=15)
-
             col_direita = ft.Column(
                 [
                     ft.Container(height=20), 
                     input_rede, 
                     ft.Container(height=20), 
-                    input_senha, 
-                    ft.Container(height=30), 
-                    texto_tema,
-                    ft.Container(height=5),
-                    paleta_temas
+                    input_senha,
                 ], 
                 horizontal_alignment=ft.CrossAxisAlignment.START
             )

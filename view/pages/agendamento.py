@@ -311,13 +311,15 @@ class AgendamentoTesteView:
             ft.Row([
                 self.input_date_text,
                 self.input_time,
-                ft.ElevatedButton(
-                    "Calendário",
-                    on_click=self._abrir_calendario,
-                    bgcolor=ACCENT_BLUE,
-                    icon=ft.Icons.CALENDAR_MONTH,
-                    style=ft.ButtonStyle(
-                        text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14, color=ft.Colors.WHITE)
+                ft.Container(
+                    content=ft.ElevatedButton(
+                        "Calendário",
+                        on_click=self._abrir_calendario,
+                        bgcolor=ACCENT_BLUE,
+                        icon=ft.Icons.CALENDAR_MONTH,
+                        style=ft.ButtonStyle(
+                            text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14, color=ft.Colors.WHITE)
+                        )
                     ),
                     padding=ft.padding.symmetric(vertical=12, horizontal=16)
                 )
@@ -329,13 +331,15 @@ class AgendamentoTesteView:
             ft.Row([
                 self.input_dispositivo if self.input_dispositivo else ft.Container(),
                 ft.Container(expand=True),
-                ft.ElevatedButton(
-                    "Salvar Agendamento",
-                    on_click=self._salvar_agendamento,
-                    bgcolor=ACCENT_BLUE,
-                    icon=ft.Icons.SAVE,
-                    style=ft.ButtonStyle(
-                        text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14, color=ft.Colors.WHITE)
+                ft.Container(
+                    content=ft.ElevatedButton(
+                        "Salvar Agendamento",
+                        on_click=self._salvar_agendamento,
+                        bgcolor=ACCENT_BLUE,
+                        icon=ft.Icons.SAVE,
+                        style=ft.ButtonStyle(
+                            text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14, color=ft.Colors.WHITE)
+                        )
                     ),
                     padding=ft.padding.symmetric(vertical=12, horizontal=16)
                 ),
