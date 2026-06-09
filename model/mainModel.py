@@ -15,6 +15,6 @@ class MainModel:
         self.categoria_model = categoria_model
         self.item_model = item_model
         self.format_model = formatModel
-        self.usuario_model = usuario_model
+        self.usuario_model = usuario_model()
 
 
