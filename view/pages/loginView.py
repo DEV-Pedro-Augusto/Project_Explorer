@@ -1,17 +1,15 @@
-
-import time
-
 class LoginView:
     def __init__(self, system):
         self.system = system
         self.on_login_success = self.system.view.page.profileSelection
         self.ft = self.system.ft
+        
 
     def render(self):
         self.system.page.clean()
-        self.system.page.padding = 0 # Remove margens da janela inteira
-        
-        # --- FUNÇÕES SECUNDÁRIAS ---
+        self.system.page.padding = 0
+
+        # --- FUNÇÕES SECUNDÁRIAS (Adaptadas do loginView original) ---
         def fechar_popup(dlg):
             dlg.open = False
             self.system.page.update()
@@ -30,10 +28,11 @@ class LoginView:
             self.system.page.update()
 
         def register_click(e):
-           self.system.view.page.cadastro(self.system).render()
+            # Alterado para a rota/renderização do loginView original
+            self.system.view.page.cadastro(self.system).render()
 
-        def handle_login(e):
-            """Valida o login e autentica o usuário."""
+        def login_click(e):
+            """Valida o login e autentica o usuário com base na lógica do loginView."""
             email = input_user.value
             senha = input_senha.value
             
@@ -52,143 +51,113 @@ class LoginView:
                 self.system.page.update()
                 return
             
-            # Tenta autenticar no banco de dados
+            # Tenta autenticar utilizando a estrutura de chamadas correta do loginView original
             usuario = self.system.model.database.autenticar_usuario(email, senha)
             
             if usuario:
-                # Armazena o usuário no sistema
+                # Armazena o usuário no sistema conforme o original
                 self.system.definir_usuario(usuario)
-                # Redireciona para seleção de perfil
+                
+                # Redireciona e renderiza a próxima página conforme o original
                 self.on_login_success(self.system).render()
+                
             else:
-                # Mostra erro de autenticação
-                dlg = self.ft.AlertDialog(
+                # Mostra popup de erro com o tema escuro/alerta do original
+                dlg_erro = self.ft.AlertDialog(
                     title=self.ft.Text("Login Inválido", weight=self.ft.FontWeight.BOLD, color=self.ft.Colors.RED_400),
                     content=self.ft.Text("E-mail ou senha incorretos. Tente novamente."),
                     actions=[
-                        self.ft.TextButton("OK", on_click=lambda e: fechar_popup(dlg))
+                        self.ft.TextButton("OK", on_click=lambda e: fechar_popup(dlg_erro))
                     ],
                     shape=self.ft.RoundedRectangleBorder(radius=15),
                     bgcolor="#15171E"
                 )
-                self.system.page.dialog = dlg
-                dlg.open = True
+                self.system.page.dialog = dlg_erro
+                dlg_erro.open = True
                 self.system.page.update()
-
-        # --- CONSTRUÇÃO DA UI (LADO ESQUERDO) ---
-
-        titulo = self.ft.Text("Faça seu login.", size=40, weight=self.ft.FontWeight.W_900, color=self.ft.Colors.WHITE)
-        
-        # Campos de Entrada 
-        input_user = self.ft.TextField(
-            label="E-mail", 
-            width=350, 
-            prefix_icon=self.ft.Icons.MAIL_OUTLINE,
-            border_radius=8,
-            border_color=self.ft.Colors.TRANSPARENT,
-            filled=True,
-            bgcolor="#15171E", # Cinza/Azul muito escuro
-            color=self.ft.Colors.WHITE
-        )
-
-        
-        input_senha = self.ft.TextField(
-            label="Senha", 
-            width=350, 
-            password=True, 
-            can_reveal_password=True, 
-            prefix_icon=self.ft.Icons.LOCK_OUTLINE,
-            border_radius=8,
-            border_color=self.ft.Colors.TRANSPARENT,
-            filled=True,
-            bgcolor="#15171E",
-            color=self.ft.Colors.WHITE
-        )
-        
-        # Link "Esqueci minha senha" alinhado à direita
-        link_senha = self.ft.Container(
-            content=self.ft.TextButton("Esqueci minha senha", on_click=forgot_password_click, style=self.ft.ButtonStyle(color=self.ft.Colors.GREY_500)),
-            width=350,
-            alignment=self.ft.alignment.center_right
-        )
-
-        # Botão Principal com Gradiente Azul
-        btn_login = self.ft.Container(
-            content=self.ft.Text("Entrar", size=16, weight=self.ft.FontWeight.BOLD, color=self.ft.Colors.WHITE),
-            alignment=self.ft.alignment.center,
-            width=350,
-            height=50,
-            border_radius=25, # Botão mais arredondado
-            ink=True, # Efeito de clique
-            on_click=handle_login,
-            gradient=self.ft.LinearGradient(
-                begin=self.ft.alignment.center_left,
-                end=self.ft.alignment.center_right,
-                colors=["#0052D4", "#4364F7", "#6FB1FC"] # Gradiente Azul vibrante
-            ),
-            shadow=self.ft.BoxShadow(spread_radius=1, blur_radius=15, color="#0052D4", offset=self.ft.Offset(0, 5))
-        )
-
-        # Link de Cadastro
-        link_cadastro = self.ft.Container(
-            content=self.ft.TextButton("Ainda não tenho uma conta", on_click=register_click, style=self.ft.ButtonStyle(color=self.ft.Colors.GREY_500)),
-            margin=self.ft.margin.only(top=20)
-        )
-
-        # Agrupando o formulário
-        form_column = self.ft.Column(
-            [
-                titulo, 
-                self.ft.Container(height=40), # Espaçador
-                input_user, 
-                self.ft.Container(height=10), # Espaçador
-                input_senha, 
-                link_senha,
-                self.ft.Container(height=20), # Espaçador
-                btn_login,
-                link_cadastro
-            ],
-            alignment=self.ft.MainAxisAlignment.CENTER,
-            horizontal_alignment=self.ft.CrossAxisAlignment.START, # Alinhado à esquerda como na sua foto
-        )
-
-        # Painel Esquerdo (Preto)
-        left_panel = self.ft.Container(
-            content=form_column,
-            width=500, # Largura fixa para o menu lateral
-            padding=self.ft.padding.only(left=80, right=40),
-            bgcolor="#0A0B10", # Preto profundo
-            alignment=self.ft.alignment.center,
             
-            # Animação de entrada
-            opacity=0, 
-            offset=self.ft.Offset(-0.2, 0), # Vem da esquerda
-            animate_opacity=700, 
-            animate_offset=self.ft.Animation(700, self.ft.AnimationCurve.EASE_OUT_EXPO)
+
+        # --- CONSTRUÇÃO DO CARTÃO GLASSMORPHISM (Design preservado) ---
+        
+        icone_topo = self.ft.Container(
+            content=self.ft.Icon(self.ft.Icons.RADAR, size=35, color=self.ft.Colors.WHITE),
+            alignment=self.ft.alignment.center,
+            margin=self.ft.margin.only(bottom=5)
         )
 
-        # --- CONSTRUÇÃO DA UI (LADO DIREITO - IMAGEM) ---
-        # Troque o 'src' abaixo pelo caminho da sua imagem local se preferir
-      # --- CONSTRUÇÃO DA UI (LADO DIREITO - IMAGEM) ---
-        right_panel = self.ft.Container(
-            expand=True, # Preenche o resto da tela
-            image=self.ft.DecorationImage(
-                src="assets/carrinho_ft_01.jpg",
-                fit=self.ft.ImageFit.COVER
-            )
+        titulo = self.ft.Text("Bem-vindo(a) de volta", size=26, weight=self.ft.FontWeight.BOLD, color=self.ft.Colors.WHITE, text_align=self.ft.TextAlign.CENTER)
+        subtitulo = self.ft.Text("Faça login para continuar", size=13, color=self.ft.Colors.WHITE70, text_align=self.ft.TextAlign.CENTER)
+
+        estilo_input = {
+            "width": 340,
+            "bgcolor": self.ft.Colors.with_opacity(0.1, self.ft.Colors.WHITE),
+            "border_color": self.ft.Colors.with_opacity(0.3, self.ft.Colors.WHITE),
+            "color": self.ft.Colors.WHITE,
+            "border_radius": 10,
+            "cursor_color": self.ft.Colors.WHITE,
+            "content_padding": 15,
+            "text_size": 14
+        }
+
+        input_user = self.ft.TextField(hint_text="Endereço de E-mail", prefix_icon=self.ft.Icons.PERSON_OUTLINE, **estilo_input)
+        input_senha = self.ft.TextField(hint_text="Senha", password=True, can_reveal_password=True, prefix_icon=self.ft.Icons.LOCK_OUTLINE, **estilo_input)
+        
+        opcoes_extras = self.ft.Row(
+            [
+                self.ft.Checkbox(label="Lembrar-me", value=False, fill_color=self.ft.Colors.with_opacity(0.2, self.ft.Colors.WHITE), label_style=self.ft.TextStyle(color=self.ft.Colors.WHITE70, size=12)),
+                self.ft.TextButton("Esqueceu a senha?", on_click=forgot_password_click, style=self.ft.ButtonStyle(color=self.ft.Colors.WHITE70))
+            ],
+            alignment=self.ft.MainAxisAlignment.SPACE_BETWEEN,
+            width=340
         )
 
-        # Layout Principal dividido em Colunas
-        layout = self.ft.Row(
-            controls=[left_panel, right_panel],
+        btn_login = self.ft.Container(
+            content=self.ft.Row([self.ft.Text("Entrar", size=15, weight=self.ft.FontWeight.BOLD, color=self.ft.Colors.WHITE), self.ft.Icon(self.ft.Icons.ARROW_FORWARD, color=self.ft.Colors.WHITE, size=18)], alignment=self.ft.MainAxisAlignment.CENTER),
+            alignment=self.ft.alignment.center, width=340, height=45, border_radius=10, ink=True, on_click=login_click,
+            bgcolor=self.ft.Colors.with_opacity(0.2, self.ft.Colors.WHITE),
+            border=self.ft.border.all(1, self.ft.Colors.with_opacity(0.4, self.ft.Colors.WHITE)),
+        )
+
+        rodape = self.ft.Row([
+            self.ft.Text("Não tem uma conta?", size=13, color=self.ft.Colors.WHITE70),
+            self.ft.TextButton("Criar uma", on_click=register_click, style=self.ft.ButtonStyle(color=self.ft.Colors.CYAN_200))
+        ], alignment=self.ft.MainAxisAlignment.CENTER, spacing=0)
+
+        glass_card = self.ft.Container(
+            content=self.ft.Column(
+                [
+                    icone_topo, titulo, subtitulo, 
+                    self.ft.Container(height=15), 
+                    input_user, input_senha, opcoes_extras, 
+                    btn_login, 
+                    self.ft.Container(height=15), 
+                    rodape
+                ],
+                horizontal_alignment=self.ft.CrossAxisAlignment.CENTER, 
+                alignment=self.ft.MainAxisAlignment.CENTER, 
+                spacing=8
+            ),
+            width=420, 
+            height=550, 
+            padding=30, 
+            border_radius=20,
+            bgcolor=self.ft.Colors.with_opacity(0.05, self.ft.Colors.WHITE), 
+            border=self.ft.border.all(1.5, self.ft.Colors.with_opacity(0.2, self.ft.Colors.WHITE)), 
+            blur=15, 
+            alignment=self.ft.alignment.center,
+            shadow=self.ft.BoxShadow(blur_radius=50, color=self.ft.Colors.with_opacity(0.1, self.ft.Colors.BLACK))
+        )
+
+        layout = self.ft.Container(
             expand=True,
-            spacing=0 # Sem espaço entre os painéis
+            image=self.ft.DecorationImage(src="assets/bg_aurora.png", fit=self.ft.ImageFit.COVER),
+            alignment=self.ft.alignment.center,
+            content=glass_card,
+            opacity=0, 
+            animate_opacity=800
         )
         
         self.system.page.add(layout)
-        
-        # --- DISPARO DA ANIMAÇÃO ---
-        time.sleep(0.1) 
-        left_panel.opacity = 1
-        left_panel.offset = self.ft.Offset(0, 0)
-        left_panel.update()
+        self.system.time.sleep(0.1) 
+        layout.opacity = 1
+        layout.update()

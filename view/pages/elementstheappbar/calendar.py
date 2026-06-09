@@ -82,7 +82,7 @@ class CalendarView:
                     ),
                     ft.DataCell(
                         ft.Container(
-                            content=ft.Text(f"ID: {dispositivo}", color=ft.Colors.WHITE80, size=12),
+                            content=ft.Text(f"ID: {dispositivo}", color=ft.Colors.WHITE10, size=12),
                             padding=ft.padding.all(4)
                         )
                     ),
