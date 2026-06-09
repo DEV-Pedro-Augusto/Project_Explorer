@@ -298,6 +298,71 @@ class Database:
             print(f"Erro ao autenticar usuário: {e}")
             return None
 
+    def registrar_usuario(self, nome: str, email: str, telefone: str, senha: str) -> dict:
+        """Registra um novo usuário no banco de dados."""
+        if not self.client:
+            print("❌ Erro: Sem conexão com o banco de dados")
+            return None
+
+        try:
+            print(f"🔍 Verificando se email {email} já existe...")
+            # Verifica se o email já existe
+            resposta_existente = self.client.table("usuarios").select("*").eq("emails_usuarios", email).execute()
+            
+            print(f"📊 Resposta da verificação: {resposta_existente.data}")
+            
+            if resposta_existente.data and len(resposta_existente.data) > 0:
+                print("⚠️ Email já cadastrado no sistema")
+                return None
+            
+            print(f"✅ Email disponível, criando novo usuário...")
+            
+            # Descobre o próximo ID disponível
+            try:
+                resposta_ids = self.client.table("usuarios").select("id_usuarios").order("id_usuarios", desc=True).limit(1).execute()
+                if resposta_ids.data and len(resposta_ids.data) > 0:
+                    ultimo_id = resposta_ids.data[0].get("id_usuarios", 2)
+                    proximo_id = ultimo_id + 1
+                else:
+                    proximo_id = 3
+            except:
+                proximo_id = 3
+            
+            print(f"📍 Próximo ID disponível: {proximo_id}")
+            
+            # Cria novo usuário com TODOS os campos incluindo ID
+            novo_usuario = {
+                "id_usuarios": proximo_id,  # Especificar ID manualmente para evitar conflito
+                "nomes_usuarios": nome,
+                "emails_usuarios": email,
+                "telefones_usuarios": telefone,
+                "senhas_usuarios": senha,
+                "id_permissoes": 2,  # Permissão padrão para usuário comum (USER)
+                "cadastros_usuarios": self._obter_timestamp_agora()  # Data/hora atual
+            }
+            
+            print(f"📝 Dados a enviar: {novo_usuario}")
+            
+            resposta = self.client.table("usuarios").insert(novo_usuario).execute()
+            
+            print(f"🔄 Resposta do Supabase: {resposta}")
+            print(f"📦 Dados retornados: {resposta.data if hasattr(resposta, 'data') else 'Sem data'}")
+            
+            if resposta.data:
+                usuario_criado = resposta.data[0] if isinstance(resposta.data, list) else resposta.data
+                print(f"🎉 Usuário '{nome}' cadastrado com sucesso!")
+                print(f"📌 Dados do usuário criado: {usuario_criado}")
+                return usuario_criado
+            else:
+                print("❌ Erro ao cadastrar usuário - sem dados na resposta")
+                return None
+        except Exception as e:
+            print(f"💥 Erro ao registrar usuário: {e}")
+            print(f"📍 Tipo do erro: {type(e)}")
+            import traceback
+            traceback.print_exc()
+            return None
+
     def listar_carrinhos_usuario(self, id_usuario: int) -> list:
         """Retorna todos os carrinhos/dispositivos disponíveis."""
         if not self.client:

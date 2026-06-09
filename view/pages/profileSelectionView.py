@@ -50,8 +50,8 @@ class ProfileSelectionView:
 
             # Botão de Logout
             def handle_logout(e):
-                self.system.limpar_usuario()
-                self.system.view.page.login(self.system).render()
+                self.system.model.usuario_model.limpar_usuario()
+                self.system.view.animate.animacaoPagina.animar_tela(self.system, self.system.view.page.login)
 
             btn_logout = ft.Container(
                 content=ft.IconButton(
