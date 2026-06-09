@@ -5,6 +5,77 @@ class DashboardView:
         self.system = system
         self.nome_carrinho = nome_carrinho
         self.ft = self.system.ft
+        self.db_client = system.model.database if hasattr(system.model, 'database') else None
+        self.sensores_map = {}  # Cache do mapeamento de sensores
+        self._load_sensores_map()
+
+    def _load_sensores_map(self):
+        """Carrega o mapeamento de sensores do banco para usar no dashboard."""
+        if not self.db_client:
+            return
+        
+        try:
+            # Obtém o ID do dispositivo selecionado
+            id_dispositivo = self.system.obter_id_dispositivo()
+            
+            if not id_dispositivo:
+                print("Nenhum dispositivo selecionado para carregar sensores")
+                return
+            
+            # Carrega apenas os sensores deste dispositivo
+            sensores_db = self.db_client.listar_sensores_dispositivo(id_dispositivo)
+            
+            # Mapeia os sensores com ícones e cores
+            mapeamento_sensores = {
+                "mq-2": {"icon": self.ft.Icons.CLOUD, "color": self.ft.Colors.GREEN_400, "nome_display": "MQ2 (Gás)"},
+                "mq-3": {"icon": self.ft.Icons.LOCAL_DRINK, "color": self.ft.Colors.YELLOW_700, "nome_display": "MQ3 (Álcool)"},
+                "mq-7": {"icon": self.ft.Icons.SMOKE_FREE, "color": self.ft.Colors.RED_500, "nome_display": "MQ7 (CO)"},
+                "mocr": {"icon": self.ft.Icons.OPACITY, "color": self.ft.Colors.ORANGE_400, "nome_display": "MOCR (Odometria)"},
+                "hc-sr": {"icon": self.ft.Icons.STRAIGHTEN, "color": self.ft.Colors.BLUE_400, "nome_display": "HC-SR04 (Ultrassônico)"},
+                "temperatura": {"icon": self.ft.Icons.THERMOSTAT, "color": self.ft.Colors.RED_400, "nome_display": "Temperatura"},
+                "umidade": {"icon": self.ft.Icons.WATER_DROP, "color": self.ft.Colors.CYAN_400, "nome_display": "Umidade"},
+                "distancia": {"icon": self.ft.Icons.STRAIGHTEN, "color": self.ft.Colors.BLUE_300, "nome_display": "Distância"},
+                "luz": {"icon": self.ft.Icons.WB_SUNNY, "color": self.ft.Colors.YELLOW_400, "nome_display": "Luminosidade"},
+                "pressao": {"icon": self.ft.Icons.SPEED, "color": self.ft.Colors.PURPLE_400, "nome_display": "Pressão"},
+            }
+            
+            # Mapeamento por ID para sensores genéricos
+            mapeamento_id_sensores = {
+                6: {"icon": self.ft.Icons.WATER_DROP, "color": self.ft.Colors.CYAN_400, "nome_display": "Umidade"},
+                7: {"icon": self.ft.Icons.STRAIGHTEN, "color": self.ft.Colors.BLUE_300, "nome_display": "Distância"},
+                8: {"icon": self.ft.Icons.THERMOSTAT, "color": self.ft.Colors.RED_400, "nome_display": "Temperatura"},
+            }
+            
+            for sensor in sensores_db:
+                id_sensor = sensor.get('id_sensores')
+                nome_sensor = sensor.get('nomes_sensores', '').lower()
+                
+                tipo_info = None
+                
+                # Primeiro tenta identificar por nome
+                for chave, info in mapeamento_sensores.items():
+                    if chave in nome_sensor:
+                        tipo_info = info
+                        break
+                
+                # Se não identificou por nome, tenta por ID
+                if not tipo_info and id_sensor in mapeamento_id_sensores:
+                    tipo_info = mapeamento_id_sensores[id_sensor]
+                
+                if not tipo_info:
+                    tipo_info = {"icon": self.ft.Icons.SENSORS_OUTLINED, "color": self.ft.Colors.BLUE_300, "nome_display": f"Sensor {id_sensor}"}
+                
+                self.sensores_map[id_sensor] = tipo_info
+                
+        except Exception as e:
+            print(f"Erro ao carregar mapeamento de sensores: {e}")
+
+    def _get_sensor_info(self, id_sensor):
+        """Retorna informações do sensor (nome, ícone, cor) baseado no ID."""
+        if id_sensor in self.sensores_map:
+            return self.sensores_map[id_sensor]
+        # Padrão se não encontrar
+        return {"icon": self.ft.Icons.SPEED, "color": self.ft.Colors.GREY_400, "nome_display": f"Sensor {id_sensor}"}
 
     def mostrar_popup_pareamento(self):
         dlg = self.ft.AlertDialog(
@@ -63,25 +134,30 @@ class DashboardView:
                 latest_by_sensor[sensor] = leitura
 
         badges = []
-        colors_palette = [
-            self.ft.Colors.CYAN_400, 
-            self.ft.Colors.YELLOW_400, 
-            self.ft.Colors.BLUE_300, 
-            self.ft.Colors.GREEN_400, 
-            self.ft.Colors.RED_500, 
-            self.ft.Colors.PURPLE_400
-        ]
 
         for idx, (sensor, leitura) in enumerate(list(latest_by_sensor.items())):
             value = leitura.get('valores_lidos', 0)
-            color = colors_palette[idx % len(colors_palette)]
+            
+            # Filtra sensores com valor 0 ou vazio
+            try:
+                valor_numerico = float(value) if value else 0
+                if valor_numerico == 0:
+                    continue  # Pula sensores com valor 0
+            except (ValueError, TypeError):
+                continue  # Pula valores inválidos
+            
+            # Obtém informações do sensor do mapeamento
+            sensor_info = self._get_sensor_info(sensor)
+            icon = sensor_info.get("icon", self.ft.Icons.SPEED)
+            color = sensor_info.get("color", self.ft.Colors.GREY_400)
+            nome = sensor_info.get("nome_display", f"Sensor {sensor}")
             
             # Encapsulado em um Container com largura definida para alinhar perfeitamente na Grid
             badges.append(
                 self.ft.Container(
                     content=self.ft.Row([
                         self.ft.Container(
-                            content=self.ft.Icon(self.ft.Icons.SPEED, color=color, size=24),
+                            content=self.ft.Icon(icon, color=color, size=24),
                             padding=6,
                             border=self.ft.border.all(1, color),
                             border_radius=8,
@@ -91,7 +167,7 @@ class DashboardView:
                             self.ft.Row([
                                 self.ft.Text(str(value), size=18, weight=self.ft.FontWeight.W_900, color=self.ft.Colors.WHITE),
                             ], spacing=2),
-                            self.ft.Text(f"Sensor {sensor}", size=11, color=self.ft.Colors.GREY_500)
+                            self.ft.Text(nome, size=11, color=self.ft.Colors.GREY_500)
                         ], spacing=0, alignment=self.ft.MainAxisAlignment.CENTER)
                     ], spacing=8),
                     bgcolor="#111827",

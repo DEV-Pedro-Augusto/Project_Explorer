@@ -9,6 +9,7 @@ class MainWindow:
         ProfileSelection,
         Settings,
         cadastro,
+        agendamento,
         MainElementsAppbar,
 ):
      
@@ -17,6 +18,7 @@ class MainWindow:
         self.profileSelection =  ProfileSelection
         self.settings = Settings
         self.cadastro = cadastro
+        self.agendamento = agendamento
         self.elementsTheAppbar = MainElementsAppbar
 
     

@@ -16,6 +16,7 @@ from view.pages.profileSelectionView import ProfileSelectionView
 from view.pages.homeView import HomeView
 from view.pages.settingsView import SettingView
 from view.pages.cadastroView import CadastroView
+from view.pages.agendamento import AgendamentoTesteView
 
     # Elements the Appbar 
 from view.pages.elementstheappbar.dashboardView import DashboardView
@@ -112,6 +113,7 @@ def main(page: ft.Page):
                 ProfileSelectionView,
                 SettingView,
                 CadastroView,
+                AgendamentoTesteView,
                 MainElementsAppbar(
                     DashboardView,
                     NotificationsView,

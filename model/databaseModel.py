@@ -137,6 +137,33 @@ class Database:
             print(f"Erro ao carregar sensores do banco: {e}")
             return []
 
+    def listar_sensores_dispositivo(self, id_dispositivo: int) -> list:
+        """Retorna apenas os sensores do dispositivo especificado."""
+        if not self.client:
+            return []
+
+        try:
+            # Busca na tabela de junção (juncao_ds) os sensores associados ao dispositivo
+            resposta_juncao = self.client.table("juncao_ds").select("id_sensores").eq("id_dispositivos", id_dispositivo).execute()
+            
+            if not resposta_juncao.data:
+                print(f"Nenhum sensor encontrado para o dispositivo {id_dispositivo}")
+                return []
+            
+            # Extrai os IDs dos sensores
+            ids_sensores = [item.get("id_sensores") for item in resposta_juncao.data if item.get("id_sensores")]
+            
+            if not ids_sensores:
+                return []
+            
+            # Busca os dados completos dos sensores
+            resposta_sensores = self.client.table("sensores").select("*").in_("id_sensores", ids_sensores).execute()
+            
+            return resposta_sensores.data or []
+        except Exception as e:
+            print(f"Erro ao carregar sensores do dispositivo {id_dispositivo}: {e}")
+            return []
+
     def exibir_catalogo_de_status(self):
         """Exibe no console os status cadastrados."""
         if not self.client:  # Corrigido para minúsculo
@@ -388,6 +415,19 @@ class Database:
         except Exception as e:
             print(f"Erro ao cadastrar agendamento: {e}")
             return None
+
+    def deletar_agendamento(self, id_agendamento: int) -> bool:
+        """Deleta um agendamento da tabela `agendamentos` pelo ID."""
+        if not self.client:
+            return False
+
+        try:
+            resposta = self.client.table("agendamentos").delete().eq("id", id_agendamento).execute()
+            print(f"Agendamento deletado: {resposta.data}")
+            return True
+        except Exception as e:
+            print(f"Erro ao deletar agendamento: {e}")
+            return False
 
     @staticmethod
     def _obter_timestamp_agora() -> str:
