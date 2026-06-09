@@ -210,7 +210,7 @@ class UploadDataView:
             "Voltar ao Início",
             on_click=go_home,
             style=ft.ButtonStyle(
-                overlay_color=ft.MaterialStateProperty.all("#062D5F")
+                overlay_color="#062D5F"
             )
         )
 
