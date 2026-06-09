@@ -135,7 +135,7 @@ def main(page: ft.Page):
             )
         ),
         MainModel(
-            Database,
+            Database(),
             CategoriaModel,
             ItemModel,
             FormatModel,

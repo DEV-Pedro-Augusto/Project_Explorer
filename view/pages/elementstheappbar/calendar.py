@@ -243,12 +243,6 @@ class CalendarView:
             
             self.ft.Container(height=20),
             
-            self.ft.Row([
-                self.ft.Chip(label=self.ft.Text("Todos os Testes"), selected=True, bgcolor="#1e293b"),
-                self.ft.Chip(label=self.ft.Text("Pendentes")),
-                self.ft.Chip(label=self.ft.Text("Ciclos de Stress")),
-                self.ft.Chip(label=self.ft.Text("Calibração")),
-            ], spacing=10),
             
             self.ft.Container(height=15),
             

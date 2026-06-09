@@ -1,4 +1,3 @@
-
 from datetime import datetime
 
 class DashboardView:
@@ -73,34 +72,39 @@ class DashboardView:
             self.ft.Colors.PURPLE_400
         ]
 
-        for idx, (sensor, leitura) in enumerate(list(latest_by_sensor.items())[:6]):
-            value = leitura.get('valores_lidos', 'N/A')
+        for idx, (sensor, leitura) in enumerate(list(latest_by_sensor.items())):
+            value = leitura.get('valores_lidos', 0)
             color = colors_palette[idx % len(colors_palette)]
             
+            # Encapsulado em um Container com largura definida para alinhar perfeitamente na Grid
             badges.append(
-                self.ft.Row([
-                    self.ft.Container(
-                        content=self.ft.Icon(self.ft.Icons.SPEED, color=color, size=28),
-                        padding=8,
-                        border=self.ft.border.all(1, color),
-                        border_radius=10,
-                        bgcolor="#0A1122"
-                    ),
-                    self.ft.Column([
-                        self.ft.Row([
-                            self.ft.Text(str(value), size=22, weight=self.ft.FontWeight.W_900, color=self.ft.Colors.WHITE),
-                            self.ft.Text("", size=12, color=self.ft.Colors.GREY_400)
-                        ], spacing=2),
-                        self.ft.Text(str(sensor), size=12, color=self.ft.Colors.GREY_500)
-                    ], spacing=0)
-                ], spacing=10)
+                self.ft.Container(
+                    content=self.ft.Row([
+                        self.ft.Container(
+                            content=self.ft.Icon(self.ft.Icons.SPEED, color=color, size=24),
+                            padding=6,
+                            border=self.ft.border.all(1, color),
+                            border_radius=8,
+                            bgcolor="#0A1122"
+                        ),
+                        self.ft.Column([
+                            self.ft.Row([
+                                self.ft.Text(str(value), size=18, weight=self.ft.FontWeight.W_900, color=self.ft.Colors.WHITE),
+                            ], spacing=2),
+                            self.ft.Text(f"Sensor {sensor}", size=11, color=self.ft.Colors.GREY_500)
+                        ], spacing=0, alignment=self.ft.MainAxisAlignment.CENTER)
+                    ], spacing=8),
+                    bgcolor="#111827",
+                    padding=10,
+                    border_radius=8,
+                    border=self.ft.border.all(1, "#1f2937"),
+                )
             )
             
         if not badges:
             return [self.ft.Text("Nenhuma leitura na última sessão.", color=self.ft.Colors.GREY_500, size=13)]
         return badges
 
-    # --- CORREÇÃO DAS GRADES (Substituído self.ft.chart.BorderSide por self.ft.BorderSide) ---
     def _build_line_chart(self, leituras):
         if not leituras:
             return self.ft.Text("Aguardando dados numéricos...", color=self.ft.Colors.GREY_500, size=12)
@@ -172,7 +176,7 @@ class DashboardView:
             return rows
 
         leituras_ordenadas = sorted(leituras, key=lambda l: l.get('data_hora') or '', reverse=True)
-        for leitura in leituras_ordenadas[:6]: 
+        for leitura in leituras_ordenadas[:12]: 
             rows.append(self.ft.DataRow(cells=[
                 self.ft.DataCell(self.ft.Text(self._format_timestamp(leitura.get('data_hora')), color=self.ft.Colors.WHITE70, size=11)),
                 self.ft.DataCell(self.ft.Text(str(leitura.get('id_sessoes_leituras', '-')), color=self.ft.Colors.WHITE70, size=11)),
@@ -235,15 +239,23 @@ class DashboardView:
             expand=3
         )
 
+        # CORREÇÃO: Mudado de Row para Row com wrap=True. 
+        # Isso impede que os sensores que passem do limite horizontal sumam do painel.
+        # CORREÇÃO DE LAYOUT: Substituído ft.Row por ft.GridView para organizar em colunas
         sensors_row = self.ft.Container(
-            content=self.ft.Row(
-                self._build_sensor_badges(leituras), 
-                alignment=self.ft.MainAxisAlignment.SPACE_BETWEEN
+            content=self.ft.GridView(
+                controls=self._build_sensor_badges(leituras),
+                runs_count=4,  # Força a exibição em 4 colunas (mude para 3 ou 5 se preferir)
+                max_extent=160, # Largura máxima de cada card de sensor
+                spacing=10,
+                run_spacing=10,
+                expand=True
             ),
+            height=180, # Limita a altura máxima para alinhar com o card da esquerda
             expand=7 
         )
 
-        top_section = self.ft.Row([session_info_card, sensors_row], spacing=20)
+        top_section = self.ft.Row([session_info_card, sensors_row], spacing=20, vertical_alignment=self.ft.CrossAxisAlignment.START)
 
         # 3. Linha do Meio
         def create_info_card(title, value, icon_name=None, highlight=False):
@@ -269,7 +281,7 @@ class DashboardView:
             create_info_card("Última Sincronização", ultima_atualizacao, self.ft.Icons.FACT_CHECK_OUTLINED),
         ], spacing=20)
 
-        # 4. DUAS LINHAS DE GRÁFICOS (Layout idêntico ao DashboardView2 com dados dinâmicos)
+        # 4. DUAS LINHAS DE GRÁFICOS
         charts_row_1 = self.ft.Row([
             self.ft.Container(
                 content=self.ft.Column([
@@ -316,7 +328,7 @@ class DashboardView:
             self.ft.Container(height=10),
             status_row,
             self.ft.Container(height=10),
-            charts_row_1, # Gráficos renderizados com sucesso!
+            charts_row_1,
             self.ft.Container(height=15),
             self.ft.Text("Registros de Telemetria Recentes", size=16, weight=self.ft.FontWeight.BOLD, color=self.ft.Colors.WHITE),
             self.ft.Container(height=5),

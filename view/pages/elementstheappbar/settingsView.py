@@ -35,10 +35,22 @@ class SettingsView:
                             trailing=self.ft.Switch(value=True, active_color=self.ft.Colors.BLUE_400),
                         ),
                         self.ft.ListTile(
-                            leading=self.ft.Icon(self.ft.Icons.NOTIFICATIONS_ACTIVE, color=self.ft.Colors.WHITE),
-                            title=self.ft.Text("Notificações de Alerta", color=self.ft.Colors.WHITE),
-                            subtitle=self.ft.Text("Avisos sobre gases ou bloqueios", color=self.ft.Colors.GREY_500),
-                            trailing=self.ft.Switch(value=True, active_color=self.ft.Colors.BLUE_400),
+                            leading=self.ft.Icon(self.ft.Icons.LANGUAGE, color=self.ft.Colors.WHITE),
+                            title=self.ft.Text("Idioma", color=self.ft.Colors.WHITE),
+                            subtitle=self.ft.Text("Configurações de idioma do painel", color=self.ft.Colors.GREY_500),
+                            trailing=self.ft.Dropdown(
+                                width=150,
+                                options=[
+                                    self.ft.dropdown.Option("Português"),
+                                    self.ft.dropdown.Option("Inglês"),
+                                    self.ft.dropdown.Option("Espanhol"),
+                                ],
+                                value="Português",
+                                color=self.ft.Colors.WHITE,
+                                bgcolor="#1A2235",
+                                border_color=self.ft.Colors.TRANSPARENT,
+                                text_size=14
+                            ),
                         ),
                     ]),
                     bgcolor="#111827",

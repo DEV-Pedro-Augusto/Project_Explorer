@@ -49,7 +49,7 @@ class LoginView:
                 return
             
             # Tenta autenticar no banco de dados 
-            usuario = self.system.model.database(self.system).autenticar_usuario(email, senha)
+            usuario = self.system.model.database.autenticar_usuario(email, senha)
             
             if usuario:
                 # Armazena o usuário no sistema

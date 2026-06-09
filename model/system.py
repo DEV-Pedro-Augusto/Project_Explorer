@@ -13,3 +13,19 @@ class System:
         self.controller = Controller
         self.service = AppServices
 
+    def definir_dispositivo(self, id_dispositivo: int):
+        """Define o dispositivo selecionado."""
+        return self.model.usuario_model.definir_dispositivo(id_dispositivo)
+    
+    def obter_id_dispositivo(self) -> int:
+        """Retorna o ID do dispositivo selecionado."""
+        return self.model.usuario_model.obter_id_dispositivo()
+    
+    def obter_id_usuario(self) -> int:
+        """Retorna o ID do usuário logado."""
+        return self.model.usuario_model.obter_id_usuario()
+    
+    def definir_usuario(self, usuario: dict):
+        """Define o usuário logado."""
+        return self.model.usuario_model.definir_usuario(usuario)
+

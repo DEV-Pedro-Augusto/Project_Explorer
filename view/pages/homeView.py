@@ -10,12 +10,11 @@ class HomeView():
         # Cache das instâncias (Lazy Load)
         self._dashboard_instance = None
         self._settings_view_instance = None
-        self._notifications_instance = None
         self._speed_instance = None
         self._calendar_instance = None
         self._events_instance = None
         self._inventory_instance = None
-
+      
         # Container principal onde as telas vão aparecer e ser animadas
         self.container_conteudo = self.ft.Container(
             expand=True,
@@ -73,12 +72,11 @@ class HomeView():
         # O sistema vai rodar isso e ver quanto tempo demora!
         def obter_view():
             if index == 0: return self._obter_conteudo_pages('Dashboard', self.get_dashboard_view())
-            elif index == 1: return self._obter_conteudo_pages('Notificações', self.get_notifications_view())
-            elif index == 2: return self._obter_conteudo_pages('Velocidade', self.get_speed_view())
-            elif index == 3: return self._obter_conteudo_pages('Calendário', self.get_calendar_view())
-            elif index == 4: return self._obter_conteudo_pages('Eventos', self.get_events_view())
-            elif index == 5: return self._obter_conteudo_pages('Inventário', self.get_inventory_view())
-            elif index == 6: return self._obter_conteudo_pages('Configurações', self.get_settings_view())
+            elif index == 1: return self._obter_conteudo_pages('Velocidade', self.get_speed_view())
+            elif index == 2: return self._obter_conteudo_pages('Calendário', self.get_calendar_view())
+            elif index == 3: return self._obter_conteudo_pages('Eventos', self.get_events_view())
+            elif index == 4: return self._obter_conteudo_pages('Inventário', self.get_inventory_view())
+            elif index == 5: return self._obter_conteudo_pages('Configurações', self.get_settings_view())
             else: return self.ft.Text("Erro: Tela não encontrada", color=self.ft.Colors.WHITE)
 
         # Chama a animação inteligente passando a função
@@ -119,11 +117,10 @@ class HomeView():
             on_change=lambda e: self.navegar(e.control.selected_index),
             destinations=[
                 self.ft.NavigationRailDestination(icon=self.ft.Icons.HOME_OUTLINED, selected_icon=self.ft.Icons.HOME),
-                self.ft.NavigationRailDestination(icon=self.ft.Icons.NOTIFICATIONS_OUTLINED, selected_icon=self.ft.Icons.NOTIFICATIONS),
                 self.ft.NavigationRailDestination(icon=self.ft.Icons.SPEED_OUTLINED, selected_icon=self.ft.Icons.SPEED),
                 self.ft.NavigationRailDestination(icon=self.ft.Icons.CALENDAR_TODAY_OUTLINED, selected_icon=self.ft.Icons.CALENDAR_TODAY),
                 self.ft.NavigationRailDestination(icon=self.ft.Icons.EMOJI_EVENTS_OUTLINED, selected_icon=self.ft.Icons.EMOJI_EVENTS),
-                self.ft.NavigationRailDestination(icon=self.ft.Icons.INVENTORY_2_OUTLINED, selected_icon=self.ft.Icons.INVENTORY),
+                self.ft.NavigationRailDestination(icon=self.ft.Icons.INVENTORY_2_OUTLINED, selected_icon=self.ft.Icons.INVENTORY_2),
                 self.ft.NavigationRailDestination(icon=self.ft.Icons.SETTINGS_OUTLINED, selected_icon=self.ft.Icons.SETTINGS),
             ]
         )

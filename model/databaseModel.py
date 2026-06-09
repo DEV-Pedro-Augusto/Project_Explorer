@@ -1,31 +1,49 @@
+import os
+import httpx
+import logging
+import math
+import pandas as pd
+from typing import List, Dict, Any
+from supabase import create_client, Client
+from supabase.lib.client_options import SyncClientOptions
+
+# Configurações (Idealmente via variáveis de ambiente)
+SUPABASE_URL = "https://ulgnemjbobycljlfuitc.supabase.co"
+SUPABASE_KEY = "sb_publishable_BsXf3gfYCYCAz5LKlgHl_w_sGQjjMwd"
+
 class Database:
     """Representa uma conexão com o banco de dados."""
 
-    def __init__(self, system):
+    # Mapeamento Oficial Exigido (Adicionado do test.py)
+    MAPEAMENTO_ETIQUETAS = {
+        "mq2_ppm": 1,
+        "mq2_lel_pct": 2,
+        "mq3_ppm": 3,
+        "mq3_mgl": 4,
+        "mq7_ppm": 5,
+        "mq7_cohb_pct": 6,
+        "tempo_volta_s": 7,
+        "dist_total_m": 8,
+        "frente_cm": 9,
+        "direita_cm": 10,
+        "esquerda_cm": 11,
+        "traseira_cm": 12
+    }
+
+    def __init__(self):
         # Inicializa a conexão ao criar o objeto (usando minúsculo)
-        self.system = system
         self.client = self.conectar_supabase()
 
-    def conectar_supabase(self):
-        """Inicializa o cliente Supabase utilizando o contexto do system."""
+    @staticmethod
+    def conectar_supabase() -> Client:
+        """Inicializa o cliente Supabase como um método estático."""
         try:
             # Para evitar erro de certificado em ambientes de desenvolvimento,
             # criamos um cliente httpx sem verificação de SSL.
-            # Acessando o httpx que foi injetado via system:
-            httpx_client = self.system.httpx.Client(verify=False)
-            
-            # Buscando as classes e opções estruturadas dentro do dicionário ou atributos do seu system:
-            SyncClientOptions = self.system.supabase["SyncClientOptions"]
-            create_client = self.system.supabase["create_client"]
-            
-            supabase_url = self.system.supabase["SUPABASE_URL"]
-            supabase_key = self.system.supabase["SUPABASE_KEY"]
-
+            httpx_client = httpx.Client(verify=False)
             options = SyncClientOptions(httpx_client=httpx_client)
 
-            # Instanciando o cliente do Supabase de forma dinâmica
-            supabase = create_client(supabase_url, supabase_key, options=options)
-            
+            supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY, options=options)
             print("Conexão estabelecida com sucesso!")
             return supabase
         except Exception as e:
@@ -34,7 +52,7 @@ class Database:
         
     def listar_logins(self) -> list:
         """Retorna todos os logins da tabela de usuários."""
-        if not self.client:
+        if not self.client:  # Corrigido para minúsculo
             return []
 
         try:
@@ -96,7 +114,7 @@ class Database:
 
     def listar_itens(self) -> list:
         """Retorna todos os itens da tabela de dispositivos."""
-        if not self.client:
+        if not self.client:  # Corrigido para minúsculo
             return []
 
         try:
@@ -106,10 +124,10 @@ class Database:
         except Exception as e:
             print(f"Erro ao carregar itens do banco: {e}")
             return []
-
+            
     def listar_sensores(self) -> list:
         """Retorna todos os sensores da tabela de sensores."""
-        if not self.client:
+        if not self.client:  # Corrigido para minúsculo
             return []
 
         try:
@@ -121,7 +139,7 @@ class Database:
 
     def exibir_catalogo_de_status(self):
         """Exibe no console os status cadastrados."""
-        if not self.client:
+        if not self.client:  # Corrigido para minúsculo
             return
 
         resposta = self.client.table("status_dispositivos").select("*").execute()
@@ -135,7 +153,7 @@ class Database:
 
     def buscar_relatorio_por_status(self, id_filtro):
         """Busca dispositivos filtrados por um ID de status específico."""
-        if not self.client:
+        if not self.client:  # Corrigido para minúsculo
             return []
 
         try:
@@ -191,7 +209,7 @@ class Database:
 
     def buscar_relatorio_por_sensor(self, id_sensor):
         """Busca os registros da junção filtrando pelo ID do sensor."""
-        if not self.client:
+        if not self.client:  # Corrigido para minúsculo
             return []
 
         requisicao = self.client.table("juncao_ds")\
@@ -275,9 +293,8 @@ class Database:
             return None
 
         try:
-            # Insere um novo dispositivo
+            # Usa chaves esperadas; o Supabase aceita chaves extras/ausentes conforme o schema
             novo_dispositivo = {
-                # Usa chaves esperadas; o Supabase aceita chaves extras/ausentes conforme o schema
                 "nomes_dispositivos": nome,
                 "codigos_dispositivos": codigo,
                 "id_usuarios": id_usuario,
@@ -298,10 +315,7 @@ class Database:
             return None
 
     def listar_sessoes_leituras(self, id_usuario: int = None, id_dispositivo: int = None) -> list:
-        """Retorna as sessões de leitura filtradas por usuário e/ou dispositivo.
-
-        Se nenhum filtro for informado, retorna todas as sessões ordenadas por `datas_uploads` desc.
-        """
+        """Retorna as sessões de leitura filtradas por usuário e/ou dispositivo."""
         if not self.client:
             return []
 
@@ -353,9 +367,7 @@ class Database:
             return []
 
     def cadastrar_agendamento(self, data_hora_agendamento: str, id_dispositivo: int, descricao_livre: str, id_usuario: int = None) -> dict:
-        """Insere um novo agendamento na tabela `agendamentos` usando o schema esperado.
-        Retorna o registro criado ou None.
-        """
+        """Insere um novo agendamento na tabela `agendamentos` usando o schema esperado."""
         if not self.client:
             return None
 
@@ -382,3 +394,138 @@ class Database:
         """Retorna o timestamp atual no formato ISO."""
         from datetime import datetime
         return datetime.now().isoformat()
+
+
+    def processar_pipeline_telemetria(self, path_gases: str, path_movimento: str) -> List[Dict[str, Any]]:
+        """Executa a fusão e verticalização (EAV) de dois arquivos CSV quaisquer.
+        
+        Retorna a lista verticalizada pronta para inserção no banco.
+        """
+        try:
+            print(f"Iniciando pipeline de fusão:\n-> Gases: {path_gases}\n-> Movimento: {path_movimento}")
+            
+            # 1. Carrega os arquivos ignorando comentários
+            df_gases = pd.read_csv(path_gases, comment='#')
+            df_movimento = pd.read_csv(path_movimento, comment='#')
+
+            # 2. Limpa e ordena Gases
+            df_gases['horario'] = pd.to_datetime(df_gases['horario'], errors='coerce')
+            df_gases.sort_values('horario', inplace=True)
+
+            # 3. Limpa e ordena Movimento (Mantendo 'Sem Leitura' como 0)
+            df_movimento['horario'] = pd.to_datetime(df_movimento['horario'], errors='coerce')
+            colunas_numericas = ['tempo_volta_s', 'dist_total_m', 'frente_cm', 'direita_cm', 'esquerda_cm', 'traseira_cm']
+            for col in colunas_numericas:
+                if col in df_movimento.columns:
+                    df_movimento[col] = pd.to_numeric(df_movimento[col], errors='coerce').fillna(0)
+            df_movimento.sort_values('horario', inplace=True)
+
+            # 4. Sincroniza tabelas por proximidade temporal (Merge Asof)
+            df_sync = pd.merge_asof(
+                left=df_gases,
+                right=df_movimento,
+                on='horario',
+                direction='nearest',
+                tolerance=pd.Timedelta(seconds=5),
+                suffixes=('_gases', '_mov')
+            )
+            df_sync = df_sync.where(pd.notnull(df_sync), None)
+
+            # 5. Estrutura a lista unificada e verticaliza no padrão EAV
+            lista_verticalizada = []
+            for _, row in df_sync.iterrows():
+                horario_iso = row["horario"].isoformat()
+
+                linha_unificada = {
+                    "mq2_ppm": row.get("mq2_ppm"),
+                    "mq2_lel_pct": row.get("mq2_lel_pct"),
+                    "mq3_ppm": row.get("mq3_ppm"),
+                    "mq3_mgl": row.get("mq3_mgl"),
+                    "mq7_ppm": row.get("mq7_ppm"),
+                    "mq7_cohb_pct": row.get("mq7_cohb_pct"),
+                    "tempo_volta_s": row.get("tempo_volta_s_mov") if row.get("tempo_volta_s_mov") is not None else row.get("tempo_volta_s_gases"),
+                    "dist_total_m": row.get("dist_total_m"),
+                    "frente_cm": row.get("frente_cm"),
+                    "direita_cm": row.get("direita_cm"),
+                    "esquerda_cm": row.get("esquerda_cm"),
+                    "traseira_cm": row.get("traseira_cm")
+                }
+
+                # Cria a lista verticalizada usando o dicionário MAPEAMENTO_ETIQUETAS
+                for chave, id_tag in self.MAPEAMENTO_ETIQUETAS.items():
+                    valor = linha_unificada.get(chave)
+                    if valor is not None and not (isinstance(valor, float) and math.isnan(valor)):
+                        lista_verticalizada.append({
+                            "horario": horario_iso,
+                            "id_etiqueta": id_tag,
+                            "valor": float(valor)
+                        })
+
+            print(f"Pipeline concluído com sucesso. {len(lista_verticalizada)} registros gerados.")
+            return lista_verticalizada
+
+        except Exception as e:
+            print(f"Erro ao executar o pipeline de telemetria: {e}")
+            return []
+
+    def importar_telemetria_supabase(self, path_gases: str, path_movimento: str, id_usuario: int, id_dispositivo: int, descricao: str = "Importação automática via pipeline") -> bool:
+        """Processa os CSVs informados, cria uma sessão vinculada ao carrinho (id_dispositivo) 
+        e insere as leituras em blocos.
+        """
+        if not self.client:
+            print("Erro: Sem conexão com o banco de dados")
+            return False
+
+        # Executa o processamento dos arquivos selecionados
+        dados_verticalizados = self.processar_pipeline_telemetria(path_gases, path_movimento)
+        if not dados_verticalizados:
+            print("Erro: Nenhum dado foi processado pelo pipeline.")
+            return False
+
+        try:
+            # Descobre os limites temporais (Início e Fim da missão)
+            horarios = sorted([reg["horario"] for reg in dados_verticalizados])
+            inicio_missao = horarios[0]
+            fim_missao = horarios[-1]
+
+            # Cria o payload da sessão usando o ID do Carrinho (id_dispositivo)
+            sessao_payload = {
+                "id_usuarios": id_usuario,
+                "id_dispositivos": id_dispositivo,  # Vinculação correta com o carrinho
+                "inicio_missao": inicio_missao,
+                "fim_missao": fim_missao,
+                "descricao_livre": descricao
+            }
+
+            # Insere a sessão de leitura no Supabase
+            res_sessao = self.client.table("sessoes_leituras").insert(sessao_payload).execute()
+            if not res_sessao.data:
+                print("Erro ao tentar salvar a sessão de leitura.")
+                return False
+
+            id_sessao = res_sessao.data[0]["id_sessoes_leituras"]
+            print(f"Nova sessão de leitura cadastrada com ID: {id_sessao}")
+
+            # Prepara a lista final de leituras mapeando as colunas do banco
+            dados_para_inserir = []
+            for registro in dados_verticalizados:
+                dados_para_inserir.append({
+                    "id_sessoes_leituras": id_sessao,
+                    "id_etiquetas_sensores": registro["id_etiqueta"],
+                    "valores_lidos": registro["valor"],
+                    "data_hora": registro["horario"]
+                })
+
+            # Inserção em lotes de 500 registros para otimização de banda
+            BATCH_SIZE = 500
+            for i in range(0, len(dados_para_inserir), BATCH_SIZE):
+                lote = dados_para_inserir[i:i + BATCH_SIZE]
+                self.client.table("leituras").insert(lote).execute()
+                print(f"Enviando lote de leituras: {i + len(lote)} / {len(dados_para_inserir)}")
+
+            print(f"🎉 Processamento e Upload finalizados! {len(dados_para_inserir)} leituras salvas na sessão {id_sessao}.")
+            return True
+
+        except Exception as e:
+            print(f"Erro durante a inserção dos dados no Supabase: {e}")
+            return False

@@ -1,4 +1,5 @@
 
+import statistics
 
 class SpeedView:
     def __init__(self, system):
@@ -120,7 +121,7 @@ class SpeedView:
                 self.ft.DataCell(self.ft.Text("--", color=self.ft.Colors.GREY_500, size=11)),
             ]))
             return rows
-        for leitura in self.leituras:
+        for leitura in self.leituras[:10]:
             rows.append(self.ft.DataRow(cells=[
                 self.ft.DataCell(self.ft.Text(str(leitura.get("id_leituras", "-")), color=self.ft.Colors.WHITE70, size=11)),
                 self.ft.DataCell(self.ft.Text(str(leitura.get("id_sessoes_leituras", "-")), color=self.ft.Colors.WHITE70, size=11)),
